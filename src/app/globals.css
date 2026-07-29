@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: hsl(var(--border));
+  }
+}
+
+:root,
+.light {
+  --background: 220 20% 97%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 238 84% 60%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 220 14% 92%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 220 14% 93%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 238 84% 95%;
+  --accent-foreground: 238 84% 40%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 220 13% 86%;
+  --input: 220 13% 90%;
+  --ring: 238 84% 60%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 224 71% 4%;
+  --foreground: 213 31% 96%;
+  --card: 224 71% 7%;
+  --card-foreground: 213 31% 96%;
+  --primary: 238 84% 67%;
+  --primary-foreground: 224 71% 4%;
+  --secondary: 217 33% 12%;
+  --secondary-foreground: 213 31% 96%;
+  --muted: 217 33% 12%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 238 84% 20%;
+  --accent-foreground: 238 84% 85%;
+  --destructive: 0 62% 40%;
+  --destructive-foreground: 213 31% 96%;
+  --border: 217 25% 12%;
+  --input: 217 33% 12%;
+  --ring: 238 84% 67%;
+}
+
+body {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Global input & textarea dark theme overrides */
+input, textarea, select {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark input, .dark textarea, .dark select {
+  background-color: hsl(224 71% 7%) !important;
+  color: hsl(213 31% 96%) !important;
+  border-color: hsl(217 25% 12%) !important;
+}
+
+/* Page Animations */
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardPop {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-page-enter {
+  animation: pageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-card-pop {
+  animation: cardPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

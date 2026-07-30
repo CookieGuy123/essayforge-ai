@@ -51,7 +51,7 @@ export default function LiteWizardPage() {
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [selectedIdeaTitle, setSelectedIdeaTitle] = useState("");
 
-  // Step 4 State: Cached Dual Draft States (With Stories vs Without Stories)
+  // Step 4 State: Cached Dual Draft States (Persisted in LocalStorage)
   const [draftWithStories, setDraftWithStories] = useState("");
   const [draftWithoutStories, setDraftWithoutStories] = useState("");
   const [useStoriesOption, setUseStoriesOption] = useState(true);
@@ -84,9 +84,14 @@ export default function LiteWizardPage() {
       setVaultStories(defaultStory);
       localStorage.setItem("essayforge_lite_stories", JSON.stringify(defaultStory));
     }
-    const savedEssay = localStorage.getItem("essayforge_lite_essay");
-    if (savedEssay) {
-      setDraftWithStories(savedEssay);
+
+    const savedWithStories = localStorage.getItem("essayforge_lite_essay_with_stories") || localStorage.getItem("essayforge_lite_essay");
+    if (savedWithStories) {
+      setDraftWithStories(savedWithStories);
+    }
+    const savedWithoutStories = localStorage.getItem("essayforge_lite_essay_without_stories");
+    if (savedWithoutStories) {
+      setDraftWithoutStories(savedWithoutStories);
     }
   }, []);
 
@@ -173,12 +178,13 @@ export default function LiteWizardPage() {
     setSelectedIdeaTitle(idea.title);
     setCurrentStep(4);
 
-    // Auto-generate full essay draft if active draft is empty
+    // Auto-generate draft with stories if empty
     if (!draftWithStories.trim()) {
       setAutoDraftLoading(true);
       try {
         const draft = await generateFullEssayDraft(selectedPrompt, profile, vaultStories, idea.title, true);
         setDraftWithStories(draft);
+        localStorage.setItem("essayforge_lite_essay_with_stories", draft);
         localStorage.setItem("essayforge_lite_essay", draft);
       } catch (e) {
         setDraftWithStories(`Title: ${idea.title}\n\nHook:\n${idea.hook}\n\nDraft:\n`);
@@ -188,22 +194,24 @@ export default function LiteWizardPage() {
     }
   };
 
-  // Instant Tab Switching with Instant Cached Drafts
+  // Instant Tab Switching with Persistent LocalStorage Dual Drafts
   const handleSwitchDraftTab = async (withStories: boolean) => {
     setUseStoriesOption(withStories);
 
     const targetDraft = withStories ? draftWithStories : draftWithoutStories;
 
-    // If the target draft is empty, generate it for the first time
+    // If target draft is empty, generate it for the FIRST time only
     if (!targetDraft.trim()) {
       setAutoDraftLoading(true);
       try {
         const draft = await generateFullEssayDraft(selectedPrompt, profile, vaultStories, selectedIdeaTitle, withStories);
         if (withStories) {
           setDraftWithStories(draft);
+          localStorage.setItem("essayforge_lite_essay_with_stories", draft);
           localStorage.setItem("essayforge_lite_essay", draft);
         } else {
           setDraftWithoutStories(draft);
+          localStorage.setItem("essayforge_lite_essay_without_stories", draft);
         }
       } catch (e) {
         // Fallback
@@ -220,9 +228,11 @@ export default function LiteWizardPage() {
       const draft = await generateFullEssayDraft(selectedPrompt, profile, vaultStories, selectedIdeaTitle, useStoriesOption);
       if (useStoriesOption) {
         setDraftWithStories(draft);
+        localStorage.setItem("essayforge_lite_essay_with_stories", draft);
         localStorage.setItem("essayforge_lite_essay", draft);
       } else {
         setDraftWithoutStories(draft);
+        localStorage.setItem("essayforge_lite_essay_without_stories", draft);
       }
     } catch (e) {
       // Fallback
@@ -234,9 +244,11 @@ export default function LiteWizardPage() {
   const handleUpdateEssayText = (val: string) => {
     if (useStoriesOption) {
       setDraftWithStories(val);
+      localStorage.setItem("essayforge_lite_essay_with_stories", val);
       localStorage.setItem("essayforge_lite_essay", val);
     } else {
       setDraftWithoutStories(val);
+      localStorage.setItem("essayforge_lite_essay_without_stories", val);
     }
   };
 
@@ -263,6 +275,8 @@ export default function LiteWizardPage() {
     setFeedback(null);
     setSelectedIdeaTitle("");
     localStorage.removeItem("essayforge_lite_essay");
+    localStorage.removeItem("essayforge_lite_essay_with_stories");
+    localStorage.removeItem("essayforge_lite_essay_without_stories");
     localStorage.removeItem("essayforge_lite_selected_idea");
     setCurrentStep(3);
   };
@@ -554,7 +568,7 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 4: WRITE COLLEGE ESSAY (INSTANT CACHED DRAFT TAB SWITCHING) */}
+        {/* STEP 4: WRITE COLLEGE ESSAY (PERMANENT DUAL LOCALSTORAGE CACHED DRAFT MODE) */}
         {currentStep === 4 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -601,7 +615,7 @@ export default function LiteWizardPage() {
                     }`}
                   >
                     <Wand2 className="h-3.5 w-3.5" />
-                    With Story Vault ✨
+                    With Story Vault ✨ {draftWithStories.trim() && "(Saved)"}
                   </button>
 
                   <button
@@ -614,7 +628,7 @@ export default function LiteWizardPage() {
                     }`}
                   >
                     <FileText className="h-3.5 w-3.5" />
-                    Without Stories (Fresh Narrative) ✍️
+                    Without Stories (Fresh Narrative) ✍️ {draftWithoutStories.trim() && "(Saved)"}
                   </button>
                 </div>
               </div>

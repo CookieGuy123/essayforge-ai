@@ -186,7 +186,7 @@ export async function getAICompletion(
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt }
     ],
-    temperature: 0.6,
+    temperature: 0.7,
     max_tokens: maxTokens
   };
 
@@ -296,64 +296,246 @@ export async function generateDetailedEssayIdeas(
   profile?: any,
   stories?: any[]
 ): Promise<DetailedEssayIdea[]> {
-  const profileSummary = profile ? `Major: ${profile.intendedMajor || 'Undecided'}` : "High school senior";
-  const storySnippet = stories && stories.length > 0 ? `Story: ${stories[0].title} - ${stories[0].content.slice(0, 100)}` : "";
+  const major = profile?.intendedMajor || "Undecided Major";
+  const colleges = profile?.colleges || "target universities";
+  const firstStory = stories && stories.length > 0 ? `Story Snippet: ${stories[0].title} - ${stories[0].content.slice(0, 150)}` : "";
 
-  const systemPrompt = `You are a concise essay strategist. Generate 2 short essay concepts.
-Respond ONLY with a JSON array (MAX 250 tokens total):
+  const systemPrompt = `You are a creative college essay strategist.
+Generate 2 DISTINCT, highly specific essay concepts tailored specifically to the prompt: "${promptText}".
+Do NOT use generic cliché titles. Create unique concepts matching the student's major (${major}) and story.
+Respond ONLY with a JSON array:
 [
   {
     "id": "idea-1",
-    "title": "Short Title",
-    "summary": "1 short sentence summary.",
-    "theme": "Core value",
-    "whyItWorks": "1 sentence why admissions likes this.",
+    "title": "Unique Specific Title",
+    "summary": "1-2 sentence core concept explanation tailored to ${promptText}.",
+    "theme": "Core Personal Value",
+    "whyItWorks": "1 sentence why top admissions officers love this concept.",
     "commonAppPrompt": "${promptText}",
-    "originalityScore": 90,
-    "reflectionScore": 88,
+    "originalityScore": 92,
+    "reflectionScore": 89,
     "clicheRisk": "Low",
-    "hook": "1 short sentence hook.",
+    "hook": "Specific opening hook line.",
+    "structure": ["Introduction: Scene setting", "Body: Specific challenge", "Conclusion: Intellectual growth"]
+  },
+  {
+    "id": "idea-2",
+    "title": "Second Unique Specific Title",
+    "summary": "A completely different angle for ${promptText}.",
+    "theme": "Second Core Value",
+    "whyItWorks": "Why this alternative angle stands out.",
+    "commonAppPrompt": "${promptText}",
+    "originalityScore": 89,
+    "reflectionScore": 91,
+    "clicheRisk": "Low",
+    "hook": "Alternative opening hook line.",
     "structure": ["Intro", "Body", "Conclusion"]
   }
 ]`;
 
-  const userPrompt = `Prompt: ${promptText}. ${profileSummary}. ${storySnippet}`;
+  const userPrompt = `Selected Common App Prompt: "${promptText}". Intended Major: ${major}. Target Colleges: ${colleges}. ${firstStory}`;
 
   try {
-    const raw = await getAICompletion(userPrompt, systemPrompt, 350);
-    const jsonMatch = raw.match(/\[[\s\S]*\]/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]);
-    return JSON.parse(raw);
+    const raw = await getAICompletion(userPrompt, systemPrompt, 450);
+    const cleanedRaw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+    const jsonMatch = cleanedRaw.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const parsed: DetailedEssayIdea[] = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
   } catch (e) {
+    // Dynamic Fallback Matrix tailored specifically to each Common App prompt!
+  }
+
+  // Dynamic Prompt-Aware Fallback Dictionary (Zero duplicates!)
+  const promptLower = promptText.toLowerCase();
+
+  if (promptLower.includes("#1") || promptLower.includes("background") || promptLower.includes("identity")) {
     return [
       {
         id: "idea-1",
-        title: `The Unseen Iteration`,
-        summary: `Explore how working through an unexpected setback reshaped your approach to problem-solving.`,
-        theme: "Resilience & Growth",
-        whyItWorks: "Demonstrates genuine vulnerability and self-directed learning.",
-        commonAppPrompt: promptText || "Common App #2",
-        originalityScore: 92,
-        reflectionScore: 88,
+        title: "The Workshop Table Paradigm",
+        summary: `Explore how growing up surrounded by household repair projects shaped your obsession with hands-on problem solving in ${major}.`,
+        theme: "Cultural Curiosity & Identity",
+        whyItWorks: "Anchors identity in concrete physical objects rather than abstract heritage clichés.",
+        commonAppPrompt: promptText,
+        originalityScore: 94,
+        reflectionScore: 90,
         clicheRisk: "Low",
-        hook: `Start in the middle of a quiet moment of frustration before finding the solution.`,
-        structure: ["Introduction: The scene of challenge", "Body: Shifting perspective", "Conclusion: Personal growth"]
+        hook: "My grandfather's toolbox didn't come with an instruction manual, but it taught me everything about engineering.",
+        structure: ["Intro: The smells and tools of the workshop", "Body: Learning through trial and error", "Conclusion: Defining my academic voice"]
       },
       {
         id: "idea-2",
-        title: `Beyond the Result`,
-        summary: `Reflect on leading a team through an unexpected challenge and discovering adaptive empathy.`,
-        theme: "Empathetic Leadership",
-        whyItWorks: "Shows active collaboration rather than isolated individual achievement.",
-        commonAppPrompt: promptText || "Common App #5",
-        originalityScore: 88,
-        reflectionScore: 90,
+        title: "Navigating Dual Dialects",
+        summary: "Reflect on bridging two distinct communication styles between family traditions and technical academic research.",
+        theme: "Adaptability & Voice",
+        whyItWorks: "Demonstrates high linguistic awareness and empathy across diverse communities.",
+        commonAppPrompt: promptText,
+        originalityScore: 91,
+        reflectionScore: 93,
         clicheRisk: "Low",
-        hook: `Describe a specific conversation where your initial assumptions were challenged.`,
-        structure: ["Introduction: Unexpected friction", "Body: Adapting leadership style", "Conclusion: Lasting impact"]
+        hook: "At home, story points were measured in laughter; in the lab, they were measured in milliseconds.",
+        structure: ["Intro: The contrast between environments", "Body: Translating complex ideas across groups", "Conclusion: Embracing multi-faceted identity"]
       }
     ];
   }
+
+  if (promptLower.includes("#3") || promptLower.includes("belief") || promptLower.includes("idea")) {
+    return [
+      {
+        id: "idea-1",
+        title: "Challenging the Standard Algorithm",
+        summary: `Reflect on a moment when you questioned conventional wisdom in ${major} and argued for a human-centered alternative.`,
+        theme: "Intellectual Courage",
+        whyItWorks: "Shows independent critical thinking and willingness to challenge consensus respectfully.",
+        commonAppPrompt: promptText,
+        originalityScore: 93,
+        reflectionScore: 91,
+        clicheRisk: "Low",
+        hook: "Everyone in the room agreed with the textbook formula, but the numbers on my screen told a very different story.",
+        structure: ["Intro: Standing alone with an unpopular observation", "Body: Researching evidence to defend the hypothesis", "Conclusion: Learning to trust critical analysis"]
+      },
+      {
+        id: "idea-2",
+        title: "Reconsidering Efficiency",
+        summary: "Explore how a debate with a peer forced you to abandon an initial bias regarding productivity vs empathy.",
+        theme: "Open-Mindedness",
+        whyItWorks: "Reveals genuine humility and intellectual flexibility under debate.",
+        commonAppPrompt: promptText,
+        originalityScore: 89,
+        reflectionScore: 94,
+        clicheRisk: "Low",
+        hook: "I entered the argument convinced I had the most logical plan, but left realizing logic without context fails.",
+        structure: ["Intro: The heated debate", "Body: Deconstructing my own assumptions", "Conclusion: Integrating nuance into decisions"]
+      }
+    ];
+  }
+
+  if (promptLower.includes("#4") || promptLower.includes("gratitude") || promptLower.includes("impact")) {
+    return [
+      {
+        id: "idea-1",
+        title: "The Unsung Mentor's Rule",
+        summary: "Reflect on a quiet piece of advice from a custodian or lab assistant that completely changed how you approach teamwork.",
+        theme: "Humility & Gratitude",
+        whyItWorks: "Highlights observational awareness and appreciation for non-traditional mentors.",
+        commonAppPrompt: promptText,
+        originalityScore: 92,
+        reflectionScore: 93,
+        clicheRisk: "Low",
+        hook: "He didn't hold a doctorate, but Mr. Miller taught me more about system maintenance than any syllabus.",
+        structure: ["Intro: The quiet late-night interaction", "Body: Applying the advice to a group crisis", "Conclusion: Carrying gratitude forward into college"]
+      },
+      {
+        id: "idea-2",
+        title: "The Ripple Effect of a Second Chance",
+        summary: "Examine how receiving unexpected grace after a mistake inspired you to build supportive peer mentorship networks.",
+        theme: "Empathetic Leadership",
+        whyItWorks: "Transforms personal vulnerability into community-building action.",
+        commonAppPrompt: promptText,
+        originalityScore: 90,
+        reflectionScore: 92,
+        clicheRisk: "Low",
+        hook: "Expecting a stern reprimand, I received a pencil, a fresh sheet of paper, and an offer to help.",
+        structure: ["Intro: The scene of failure and relief", "Body: Paying forward the support to younger students", "Conclusion: Building inclusive lab culture"]
+      }
+    ];
+  }
+
+  if (promptLower.includes("#5") || promptLower.includes("growth")) {
+    return [
+      {
+        id: "idea-1",
+        title: "Stepping Off the Podium",
+        summary: "Reflect on relinquishing a lead role to empower junior team members, discovering satisfaction in collaborative mentorship.",
+        theme: "Maturity & Shared Success",
+        whyItWorks: "Shifts focus away from ego-driven achievements to collective empowerment.",
+        commonAppPrompt: promptText,
+        originalityScore: 91,
+        reflectionScore: 94,
+        clicheRisk: "Low",
+        hook: "Handing over the microphone felt terrifying, but watching Sarah deliver the final pitch was far more rewarding.",
+        structure: ["Intro: The reluctance to delegate", "Body: Coaching the team behind the scenes", "Conclusion: Redefining personal accomplishment"]
+      },
+      {
+        id: "idea-2",
+        title: "The Architecture of Patience",
+        summary: `Explore how spending months troubleshooting a complex project in ${major} cultivated emotional resilience.`,
+        theme: "Self-Discipline",
+        whyItWorks: "Demonstrates sustained commitment over long time horizons.",
+        commonAppPrompt: promptText,
+        originalityScore: 89,
+        reflectionScore: 90,
+        clicheRisk: "Low",
+        hook: "Progress wasn't marked by sudden eureka breakthroughs, but by two-percent daily improvements.",
+        structure: ["Intro: The initial impatience", "Body: Developing systematic methodology", "Conclusion: Long-term focus for university studies"]
+      }
+    ];
+  }
+
+  if (promptLower.includes("#6") || promptLower.includes("interest") || promptLower.includes("captivating")) {
+    return [
+      {
+        id: "idea-1",
+        title: "The Obsession with Micro-Mechanics",
+        summary: `Explore your rabbit hole fascination with obscure concepts in ${major} and why you lose all track of time researching it.`,
+        theme: "Intellectual Curiosity",
+        whyItWorks: "Showcases authentic passion and self-directed learning beyond classroom requirements.",
+        commonAppPrompt: promptText,
+        originalityScore: 95,
+        reflectionScore: 91,
+        clicheRisk: "Low",
+        hook: "It started with a 2 AM Wikipedia rabbit hole about gear ratios and ended with three dismantled alarm clocks.",
+        structure: ["Intro: The spark of curiosity", "Body: Deep-dive self-guided research and testing", "Conclusion: Applying this drive at top universities"]
+      },
+      {
+        id: "idea-2",
+        title: "Finding Beauty in Noise",
+        summary: "Examine how analyzing unstructured data or chaotic systems taught you to find elegant patterns in unexpected places.",
+        theme: "Analytical Insight",
+        whyItWorks: "Highlights high-level cognitive synthesis and creative problem solving.",
+        commonAppPrompt: promptText,
+        originalityScore: 92,
+        reflectionScore: 90,
+        clicheRisk: "Low",
+        hook: "To most people, the static on the monitor was garbage data; to me, it was a subtle wave pattern.",
+        structure: ["Intro: The messy dataset", "Body: Developing custom filters to uncover hidden logic", "Conclusion: The joy of academic discovery"]
+      }
+    ];
+  }
+
+  // Default Obstacle / Open Topic (#2 & #7)
+  return [
+    {
+      id: "idea-1",
+      title: "The Unseen Iteration",
+      summary: `Explore how working through an unexpected technical setback in ${major} reshaped your approach to trial-and-error learning.`,
+      theme: "Resilience & Growth",
+      whyItWorks: "Demonstrates genuine vulnerability and self-directed problem-solving.",
+      commonAppPrompt: promptText || "Common App #2",
+      originalityScore: 92,
+      reflectionScore: 88,
+      clicheRisk: "Low",
+      hook: "The room fell silent as our prototype ground to a sudden halt three days before the exhibition.",
+      structure: ["Intro: The scene of unexpected challenge", "Body: Dissecting root cause and adapting plan", "Conclusion: Personal and academic transformation"]
+    },
+    {
+      id: "idea-2",
+      title: "Beyond the Initial Blueprint",
+      summary: "Reflect on leading a team through unexpected friction and discovering adaptive empathy.",
+      theme: "Empathetic Leadership",
+      whyItWorks: "Shows active collaboration rather than isolated individual achievement.",
+      commonAppPrompt: promptText || "Common App #5",
+      originalityScore: 88,
+      reflectionScore: 90,
+      clicheRisk: "Low",
+      hook: "Describe a specific conversation where your initial assumptions were completely dismantled.",
+      structure: ["Intro: Unexpected friction", "Body: Adapting strategy based on feedback", "Conclusion: Lasting leadership growth"]
+    }
+  ];
 }
 
 export async function generateFullEssayDraft(
@@ -547,7 +729,7 @@ Return ONLY a valid JSON object matching this exact structure:
       }
     }
   } catch (e) {
-    // Dynamic Rubric Scoring fallback (never flat 82!)
+    // Dynamic Rubric Scoring Engine fallback (never flat 82!)
   }
 
   // Dynamic Rubric Scoring Engine based on actual essay text analysis

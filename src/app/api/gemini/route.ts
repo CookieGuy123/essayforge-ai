@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-// Priority chain optimized for Google AI Studio Free Tier availability
-const PRIORITY_MODELS = ["gemini-1.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+// Priority chain optimized for sub-2 second generation speed: gemini-2.0-flash (fastest) -> gemini-2.5-flash -> gemini-1.5-flash
+const PRIORITY_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 
 export async function POST(req: Request) {
   try {
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
           cache: "no-store",
-          signal: AbortSignal.timeout(15000) // 15-second strict interactive timeout per attempt
+          signal: AbortSignal.timeout(12000) // Fast 12-second interactive timeout
         });
 
         const duration = Date.now() - startTime;
@@ -68,13 +68,13 @@ export async function POST(req: Request) {
         const errorMessage = data?.error?.message || `HTTP ${res.status} Error`;
         lastErrorMessage = errorMessage;
 
-        // Fallback ONLY for temporary availability/quota errors: HTTP 429 (Rate Limit / Quota) or HTTP 503 (Service Unavailable)
+        // Fallback ONLY for temporary quota/rate errors (429 / 503)
         const isTemporaryError = res.status === 429 || res.status === 503;
         const fallbackTriggered = isTemporaryError && !isLastModel;
 
         console.log(`[Gemini Log] Model: ${modelId} | Start: ${startTimestamp} | Status: ${res.status} | Duration: ${duration}ms | FallbackTriggered: ${fallbackTriggered}`);
 
-        // Immediately fail on non-retryable errors (HTTP 400 Bad Request, HTTP 404 Not Found, etc.)
+        // Fail fast on bad requests (400, 404)
         if (!isTemporaryError) {
           return NextResponse.json(
             { error: `Gemini ${modelId} Error (${res.status}): ${errorMessage}` },
@@ -82,10 +82,9 @@ export async function POST(req: Request) {
           );
         }
 
-        // If rate limited (429), wait 2.5 seconds for the free-tier quota window to reset before attempting fallback
+        // Fast 500ms fallback step if 429 occurs on 2.0-flash
         if (fallbackTriggered) {
-          const waitMs = res.status === 429 ? 2500 : 500;
-          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       } catch (err: any) {
         const duration = Date.now() - startTime;
@@ -93,14 +92,14 @@ export async function POST(req: Request) {
         lastErrorMessage = err.message || "Request timeout";
 
         const fallbackTriggered = isTimeout && !isLastModel;
-        console.log(`[Gemini Log] Model: ${modelId} | Start: ${startTimestamp} | Status: ${isTimeout ? "Timeout (15s)" : "Error"} | Duration: ${duration}ms | FallbackTriggered: ${fallbackTriggered}`);
+        console.log(`[Gemini Log] Model: ${modelId} | Start: ${startTimestamp} | Status: ${isTimeout ? "Timeout (12s)" : "Error"} | Duration: ${duration}ms | FallbackTriggered: ${fallbackTriggered}`);
 
         if (!isTimeout) {
           return NextResponse.json({ error: `Request Error: ${err.message}` }, { status: 500 });
         }
 
         if (fallbackTriggered) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
       }
     }

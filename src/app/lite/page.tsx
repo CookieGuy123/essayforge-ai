@@ -145,11 +145,10 @@ export default function LiteWizardPage() {
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Step Wizard Progress Bar */}
+      {/* Quick Step Bar Navigation */}
       <div className="w-full max-w-4xl mb-6">
         <div className="flex items-center justify-between bg-card p-2 rounded-2xl border border-border/40 shadow-xs">
           {stepsList.map((step) => {
-            const Icon = step.icon;
             const isActive = currentStep === step.num;
             const isDone = currentStep > step.num;
 
@@ -157,7 +156,7 @@ export default function LiteWizardPage() {
               <button
                 key={step.num}
                 onClick={() => setCurrentStep(step.num)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
                   isActive
                     ? "bg-indigo-600 text-white shadow-md scale-[1.02]"
                     : isDone

@@ -19,22 +19,22 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Local Profile", href: "/dashboard/profile", icon: User },
-    { name: "Voice Preservation", href: "/dashboard/voice-profile", icon: Mic, highlight: true },
-    { name: "Story Vault", href: "/dashboard/story-vault", icon: Archive },
-    { name: "AI Interviewer", href: "/dashboard/ai-interview", icon: MessageSquareCode },
-    { name: "Idea Generator", href: "/dashboard/essay-idea-generator", icon: Sparkles },
-    { name: "Essay Workspace", href: "/dashboard/essay-workspace", icon: PenTool },
-    { name: "Essay Analyzer", href: "/dashboard/essay-analyzer", icon: BrainCircuit, highlight: true },
-    { name: "LM Studio Status", href: "/dashboard/lm-studio-status", icon: Activity },
+    { name: "Overview", href: "/pro", icon: LayoutDashboard },
+    { name: "Local Profile", href: "/pro/profile", icon: User },
+    { name: "Voice Preservation", href: "/pro/voice-profile", icon: Mic, highlight: true },
+    { name: "Story Vault", href: "/pro/story-vault", icon: Archive },
+    { name: "AI Interviewer", href: "/pro/ai-interview", icon: MessageSquareCode },
+    { name: "Idea Generator", href: "/pro/essay-idea-generator", icon: Sparkles },
+    { name: "Essay Workspace", href: "/pro/essay-workspace", icon: PenTool },
+    { name: "Essay Analyzer", href: "/pro/essay-analyzer", icon: BrainCircuit, highlight: true },
+    { name: "LM Studio Status", href: "/pro/lm-studio-status", icon: Activity },
   ];
 
   return (
     <aside className="w-64 border-r border-border/40 bg-card dark:bg-slate-950 flex flex-col justify-between hidden md:flex shrink-0 min-h-screen transition-colors">
       <div>
         <Link 
-          href="/dashboard" 
+          href="/pro" 
           prefetch={true}
           className="p-6 border-b border-border/40 flex items-center gap-3 group cursor-pointer hover:bg-secondary/40 transition-colors block"
         >
@@ -44,7 +44,7 @@ export function Sidebar() {
             </div>
             <div>
               <h1 className="font-extrabold text-xl leading-tight tracking-tight text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500 transition-colors">
-                EssayForge AI
+                EssayForge Pro
               </h1>
               <p className="text-xs text-muted-foreground font-semibold">Local Essay Coach</p>
             </div>
@@ -54,7 +54,7 @@ export function Sidebar() {
         <nav className="p-4 space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.href !== "/pro" && pathname.startsWith(item.href));
 
             return (
               <Link

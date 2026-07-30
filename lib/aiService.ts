@@ -436,35 +436,47 @@ export async function generateFullEssayDraft(
     ? stories.map(s => `Anecdote (${s.title}): ${s.content}`).join("\n\n")
     : "No pre-saved anecdotes used. Craft a organic narrative from scratch based on personal growth and self-reflection.";
 
-  // Human Voice Directive (Zero AI Clichés / Zero Em Dashes / Conversational High School Voice)
-  const systemPrompt = `Write this Common App essay as if it were written by a thoughtful high school senior reflecting honestly on a real experience.
-Use a natural, conversational voice instead of overly polished or formal language.
-Include specific details, sensory moments, and personal reflections rather than generic statements.
-Vary sentence length and structure, and don't make every paragraph perfectly symmetrical.
-Avoid clichés, buzzwords, and dramatic exaggeration.
-DO NOT use em dashes (-- or —), unnecessary adjectives, or overly sophisticated vocabulary just to sound impressive.
-Show personality, including small imperfections in the narration, moments of uncertainty, humor, or self-doubt where appropriate.
-Focus on telling a genuine story that reveals something meaningful about the writer rather than trying to sound inspirational.
-The essay should feel authentic, nuanced, and unmistakably human.
-
-STRICT MINIMUM LENGTH REQUIREMENT: You MUST write a full-length, complete Common App Personal Statement of AT LEAST 450 WORDS (target range: 450 to 550 words).`;
+  // Strict Formatting Directive (OUTPUT ONLY ESSAY PARAGRAPHS - ZERO OUTLINES OR META NOTES)
+  const systemPrompt = `You are a top college admissions essay coach.
+OUTPUT ONLY THE FINAL COMMON APP ESSAY TEXT ITSELF.
+CRITICAL FORMATTING RULES:
+1. DO NOT output any planning steps, outlines, bullet points (* Name:, * Intro:), notes, constraints lists, or meta-commentary.
+2. Start directly with the essay Title or the opening paragraph.
+3. Use a natural, conversational voice of a thoughtful high school senior.
+4. DO NOT use em dashes (-- or —), artificial SAT jargon, or dramatic exaggeration.
+5. Minimum length: 450 to 550 words across 4 well-developed paragraphs.`;
 
   const userPrompt = `Writer Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
 Common App Prompt: ${promptText}
 Concept Title: ${ideaTitle || "Reframing the Challenge"}
-Incorporated Anecdotes: ${includeStories ? "YES" : "NO (Generate fresh open narrative)"}
+Incorporated Anecdotes: ${includeStories ? "YES" : "NO"}
 ${storiesSummary}
 
 Timestamp Seed: ${Date.now()}
 
-Write the complete 450+ word authentic human Common App Personal Statement.`;
+Write ONLY the 450+ word final Common App Personal Statement.`;
 
   // Always attempt live AI completion
-  const raw = await getAICompletion(userPrompt, systemPrompt, 900);
-  const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
+  const raw = await getAICompletion(userPrompt, systemPrompt, 950);
+
+  // Clean any accidental markdown outlines or meta-commentary bullets from AI response
+  const cleanedText = raw
+    .replace(/^(\s*\*|\s*-|\s*#+).*?(Name:|Intro:|Constraint|Gearbox|Word Count|Opening:|Middle:).*\n?/gim, "")
+    .replace(/—|--/g, ", ")
+    .trim();
+
+  // If text contains bullet point outlines, filter them out to preserve only clean essay paragraphs
+  const cleanParagraphs = cleanedText
+    .split("\n")
+    .filter(line => !line.trim().startsWith("*") && !line.trim().startsWith("-") && !line.includes("Check:"))
+    .join("\n")
+    .trim();
+
+  const finalEssay = cleanParagraphs || cleanedText;
+  const wordCount = finalEssay.split(/\s+/).filter(Boolean).length;
   
-  if (raw && wordCount >= 250) {
-    return raw.replace(/—|--/g, ", ");
+  if (finalEssay && wordCount >= 250) {
+    return finalEssay;
   }
 
   throw new Error("AI returned an incomplete response. Please try again!");
@@ -625,7 +637,7 @@ Return ONLY a valid JSON object matching this exact structure:
       {
         original: cleanSnippet + "...",
         suggestion: "Enhance sensory details and show physical reaction in this moment.",
-        reasoning: "Specific sensory hooks ground the story in a memorable real-life experience.",
+        reasoning: "Sensory details ground the story in a memorable real-life experience.",
         type: "flow"
       }
     ],

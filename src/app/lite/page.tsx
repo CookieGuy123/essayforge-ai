@@ -62,9 +62,15 @@ export default function LiteWizardPage() {
   // Active Draft Text in Editor
   const essayText = useStoriesOption ? draftWithStories : draftWithoutStories;
 
-  // Step 5 State: Feedback
-  const [feedback, setFeedback] = useState<ComprehensiveEssayAnalysis | null>(null);
+  // Step 5 State: Dual Feedback Workspaces
+  const [feedbackWithStories, setFeedbackWithStories] = useState<ComprehensiveEssayAnalysis | null>(null);
+  const [feedbackWithoutStories, setFeedbackWithoutStories] = useState<ComprehensiveEssayAnalysis | null>(null);
+  const [activeFeedbackTab, setActiveFeedbackTab] = useState<"with" | "without">("with");
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+
+  // Active Feedback Object
+  const currentFeedback = activeFeedbackTab === "with" ? feedbackWithStories : feedbackWithoutStories;
+  const currentFeedbackDraftText = activeFeedbackTab === "with" ? draftWithStories : draftWithoutStories;
 
   // Initialize from LocalStorage
   useEffect(() => {
@@ -235,14 +241,21 @@ export default function LiteWizardPage() {
     }
   };
 
-  // Feedback Generator
+  // Feedback Generator (Analyzes both With Story Vault & Without Stories drafts)
   const handleRunFeedback = async () => {
-    if (!essayText.trim()) return;
     setFeedbackLoading(true);
     setCurrentStep(5);
+    setActiveFeedbackTab(useStoriesOption ? "with" : "without");
+
     try {
-      const res = await analyzeEssayComprehensive(essayText, selectedPrompt, profile);
-      setFeedback(res);
+      if (draftWithStories.trim()) {
+        const resWith = await analyzeEssayComprehensive(draftWithStories, selectedPrompt, profile);
+        setFeedbackWithStories(resWith);
+      }
+      if (draftWithoutStories.trim()) {
+        const resWithout = await analyzeEssayComprehensive(draftWithoutStories, selectedPrompt, profile);
+        setFeedbackWithoutStories(resWithout);
+      }
     } catch (e) {
       // Fallback
     } finally {
@@ -255,7 +268,8 @@ export default function LiteWizardPage() {
     setDraftWithStories("");
     setDraftWithoutStories("");
     setIdeas([]);
-    setFeedback(null);
+    setFeedbackWithStories(null);
+    setFeedbackWithoutStories(null);
     setSelectedIdeaTitle("");
     setAiErrorMsg("");
     localStorage.removeItem("essayforge_lite_essay");
@@ -575,7 +589,7 @@ export default function LiteWizardPage() {
                 </Badge>
 
                 <Button
-                  disabled={!essayText.trim()}
+                  disabled={!draftWithStories.trim() && !draftWithoutStories.trim()}
                   onClick={handleRunFeedback}
                   className="h-10 px-5 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md shadow-orange-500/20 whitespace-nowrap shrink-0"
                 >
@@ -672,7 +686,7 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 5: FEEDBACK */}
+        {/* STEP 5: DUAL ADMISSIONS RUBRIC FEEDBACK (WITH AND WITHOUT STORY VAULT) */}
         {currentStep === 5 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -682,7 +696,7 @@ export default function LiteWizardPage() {
                 </Badge>
                 <CardTitle className="text-xl font-extrabold tracking-tight">Admissions Rubric Feedback</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground">
-                  Evaluated against Common App admissions standards.
+                  Compare admissions scores and coaching feedback between both essay versions!
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -701,22 +715,78 @@ export default function LiteWizardPage() {
                 </Button>
               </div>
             </CardHeader>
+
             <CardContent className="p-6 space-y-4">
+              {/* Dual Feedback Mode Switcher Header */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 rounded-2xl bg-secondary/50 border border-border/40 gap-2">
+                <span className="text-xs font-bold text-muted-foreground px-2">Compare Version Feedback:</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveFeedbackTab("with")}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                      activeFeedbackTab === "with"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-card"
+                    }`}
+                  >
+                    <Wand2 className="h-3.5 w-3.5" />
+                    With Story Vault ✨ {feedbackWithStories ? `(Score: ${feedbackWithStories.overallScore})` : "(No Draft)"}
+                  </button>
+
+                  <button
+                    onClick={() => setActiveFeedbackTab("without")}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                      activeFeedbackTab === "without"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-card"
+                    }`}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Without Stories (Fresh Narrative) ✍️ {feedbackWithoutStories ? `(Score: ${feedbackWithoutStories.overallScore})` : "(No Draft)"}
+                  </button>
+                </div>
+              </div>
+
               {feedbackLoading ? (
                 <div className="py-16 text-center space-y-3">
                   <Loader2 className="h-10 w-10 text-orange-500 animate-spin mx-auto" />
-                  <p className="text-sm font-bold text-foreground">Evaluating your Common App essay...</p>
+                  <p className="text-sm font-bold text-foreground">Evaluating your Common App essays against admissions rubrics...</p>
                 </div>
-              ) : feedback ? (
+              ) : currentFeedback ? (
                 <div className="space-y-4">
                   {/* Score */}
                   <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-500/10 via-card to-card border border-orange-500/30 flex items-center justify-between">
                     <div>
-                      <h3 className="font-extrabold text-lg">Overall Admissions Fit Score</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">{feedback.summary}</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs font-bold border-orange-500/30 text-orange-500">
+                          {activeFeedbackTab === "with" ? "✨ With Story Vault Anecdotes" : "✍️ Without Stories (Fresh Narrative)"}
+                        </Badge>
+                      </div>
+                      <h3 className="font-extrabold text-lg mt-1">Admissions Fit Score</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{currentFeedback.summary}</p>
                     </div>
                     <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
-                      {feedback.overallScore}
+                      {currentFeedback.overallScore}
+                    </div>
+                  </div>
+
+                  {/* Subscores Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-card border border-border/40 text-center">
+                      <p className="text-[11px] text-muted-foreground">Authenticity</p>
+                      <p className="font-extrabold text-sm text-foreground">{currentFeedback.authenticityScore}/100</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-card border border-border/40 text-center">
+                      <p className="text-[11px] text-muted-foreground">Reflection</p>
+                      <p className="font-extrabold text-sm text-foreground">{currentFeedback.reflectionScore}/100</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-card border border-border/40 text-center">
+                      <p className="text-[11px] text-muted-foreground">Specificity</p>
+                      <p className="font-extrabold text-sm text-foreground">{currentFeedback.specificityScore}/100</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-card border border-border/40 text-center">
+                      <p className="text-[11px] text-muted-foreground">Grammar & Flow</p>
+                      <p className="font-extrabold text-sm text-foreground">{currentFeedback.grammarScore}/100</p>
                     </div>
                   </div>
 
@@ -724,23 +794,23 @@ export default function LiteWizardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
                       <p className="font-bold text-emerald-600 dark:text-emerald-400">Core Strengths</p>
-                      {feedback.strengths.map((s, i) => (
+                      {currentFeedback.strengths.map((s, i) => (
                         <p key={i} className="text-muted-foreground">• {s}</p>
                       ))}
                     </div>
                     <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
                       <p className="font-bold text-amber-600 dark:text-amber-400">Growth Opportunities</p>
-                      {feedback.weaknesses.map((w, i) => (
+                      {currentFeedback.weaknesses.map((w, i) => (
                         <p key={i} className="text-muted-foreground">• {w}</p>
                       ))}
                     </div>
                   </div>
 
                   {/* Line Feedback */}
-                  {feedback.lineFeedback && feedback.lineFeedback.length > 0 && (
+                  {currentFeedback.lineFeedback && currentFeedback.lineFeedback.length > 0 && (
                     <div className="space-y-2 pt-2">
                       <h4 className="font-bold text-sm">Line Coaching Tips</h4>
-                      {feedback.lineFeedback.map((fb, idx) => (
+                      {currentFeedback.lineFeedback.map((fb, idx) => (
                         <div key={idx} className="p-3 rounded-xl bg-secondary/50 border border-border/40 text-xs space-y-1">
                           <p className="font-semibold italic text-muted-foreground">"{fb.original}"</p>
                           <p className="font-bold text-orange-500">💡 {fb.suggestion}</p>
@@ -761,7 +831,19 @@ export default function LiteWizardPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground text-center py-8">Click "Get Admissions Feedback" in Step 4 to analyze your essay.</p>
+                <div className="text-center py-10 space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    No feedback available for {activeFeedbackTab === "with" ? "the 'With Story Vault' draft" : "the 'Without Stories' draft"}.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentStep(4)}
+                    className="text-xs font-bold border-orange-500/30 text-orange-500"
+                  >
+                    Go Back to Editor to Write or Generate Draft
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

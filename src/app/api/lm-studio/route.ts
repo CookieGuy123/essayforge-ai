@@ -8,10 +8,11 @@ const LOCAL_ENDPOINTS = [
 
 async function getActiveModel(): Promise<{ endpoint: string; modelId: string | null; isLoaded: boolean }> {
   for (const endpoint of LOCAL_ENDPOINTS) {
+    if (!endpoint) continue;
     try {
       const res = await fetch(`${endpoint}/models`, {
         cache: 'no-store',
-        signal: AbortSignal.timeout(3000)
+        signal: AbortSignal.timeout(4000)
       });
 
       if (res.ok) {
@@ -33,10 +34,11 @@ export async function GET() {
   const startTime = Date.now();
 
   for (const endpoint of LOCAL_ENDPOINTS) {
+    if (!endpoint) continue;
     try {
       const res = await fetch(`${endpoint}/models`, {
         cache: 'no-store',
-        signal: AbortSignal.timeout(3000)
+        signal: AbortSignal.timeout(4000)
       });
 
       if (res.ok) {
@@ -68,7 +70,7 @@ export async function GET() {
     modelName: "Offline",
     modelsCount: 0,
     latencyMs: 0,
-    error: "LM Studio server is offline. Please launch LM Studio and click 'Start Server' at port 1234."
+    error: "LM Studio server is offline. Please start localtunnel or set LM_STUDIO_URL in Vercel."
   });
 }
 
@@ -94,6 +96,7 @@ export async function POST(req: Request) {
     let lastErrorMessage = "";
 
     for (const ep of LOCAL_ENDPOINTS) {
+      if (!ep) continue;
       try {
         const res = await fetch(`${ep}/chat/completions`, {
           method: "POST",

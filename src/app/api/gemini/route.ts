@@ -35,7 +35,7 @@ async function getAvailableGeminiModel(apiKey: string): Promise<string[]> {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { prompt, systemPrompt, maxTokens = 900, apiKeyOverride } = body;
+    const { prompt, systemPrompt, maxTokens = 2500, apiKeyOverride } = body;
 
     const apiKey =
       apiKeyOverride ||
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       ],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: maxTokens
+        maxOutputTokens: Math.max(2500, maxTokens)
       }
     };
 

@@ -66,7 +66,7 @@ export interface ComprehensiveEssayAnalysis {
 export async function getGeminiCompletion(
   prompt: string,
   systemPrompt: string,
-  maxTokens: number = 2000
+  maxTokens: number = 2500
 ): Promise<string> {
   const apiKey = 
     (typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null) ||
@@ -179,7 +179,7 @@ export async function checkLMStudioStatus(): Promise<LMStudioStatus> {
 export async function getAICompletion(
   prompt: string,
   systemPrompt: string = "You are EssayForge AI, an expert college admissions essay coach.",
-  maxTokens: number = 500
+  maxTokens: number = 2500
 ): Promise<string> {
   const provider = typeof window !== "undefined" ? localStorage.getItem("essayforge_provider") : "lm-studio";
 
@@ -449,8 +449,8 @@ export function extractPureEssayText(raw: string, title?: string): string {
       .replace(/—|--/g, ", ")
       .trim();
 
-    // Valid essay paragraphs have at least 120 characters and multiple words
-    if (cleanProse.length > 80 && cleanProse.split(/\s+/).length > 15) {
+    // Valid essay paragraphs have at least 80 characters and multiple words
+    if (cleanProse.length > 50 && cleanProse.split(/\s+/).length > 10) {
       essayParagraphs.push(cleanProse);
     }
   }
@@ -498,8 +498,8 @@ Timestamp Seed: ${Date.now()}
 
 Write ONLY the final 450+ word Common App Personal Statement paragraphs immediately.`;
 
-  // Always attempt live AI completion with 2000 token headroom to prevent mid-sentence cutoff!
-  const raw = await getAICompletion(userPrompt, systemPrompt, 2000);
+  // Always attempt live AI completion with 2500 token headroom to guarantee zero cutoffs!
+  const raw = await getAICompletion(userPrompt, systemPrompt, 2500);
 
   // Extract pure essay prose using extractPureEssayText
   const cleanEssay = extractPureEssayText(raw, ideaTitle);

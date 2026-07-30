@@ -10,7 +10,7 @@ export function Header() {
       <div className="flex items-center gap-4">
         <Link href="/pro" prefetch={true} className="font-extrabold text-lg tracking-tight text-foreground hover:opacity-90 transition-opacity flex items-center gap-2">
           <span>EssayForge</span>
-          <Badge variant="outline" className="text-[10px] font-bold border-indigo-500/30 text-indigo-500">
+          <Badge variant="outline" className="text-[10px] font-bold border-orange-500/30 text-orange-500 bg-orange-500/10">
             Pro
           </Badge>
         </Link>

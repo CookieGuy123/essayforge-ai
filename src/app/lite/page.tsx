@@ -145,7 +145,7 @@ export default function LiteWizardPage() {
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Quick Step Bar Navigation */}
+      {/* Step Bar Navigation */}
       <div className="w-full max-w-4xl mb-6">
         <div className="flex items-center justify-between bg-card p-2 rounded-2xl border border-border/40 shadow-xs">
           {stepsList.map((step) => {
@@ -158,14 +158,14 @@ export default function LiteWizardPage() {
                 onClick={() => setCurrentStep(step.num)}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
                   isActive
-                    ? "bg-indigo-600 text-white shadow-md scale-[1.02]"
+                    ? "bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 text-white shadow-md scale-[1.02]"
                     : isDone
-                    ? "text-indigo-500 bg-indigo-500/10 hover:bg-indigo-500/20"
+                    ? "text-orange-500 bg-orange-500/10 hover:bg-orange-500/20"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                 }`}
               >
                 <span className={`h-5 w-5 rounded-full flex items-center justify-center text-[11px] ${
-                  isActive ? "bg-white/20 text-white" : isDone ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground"
+                  isActive ? "bg-white/20 text-white" : isDone ? "bg-orange-500 text-white" : "bg-muted text-muted-foreground"
                 }`}>
                   {isDone ? <Check className="h-3 w-3 stroke-[3]" /> : step.num}
                 </span>
@@ -183,7 +183,7 @@ export default function LiteWizardPage() {
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                <Badge className="w-fit bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold text-[11px] px-2.5 py-0.5">
                   Step 1 of 5
                 </Badge>
                 <CardTitle className="text-xl font-extrabold tracking-tight">Common App Student Profile</CardTitle>
@@ -194,7 +194,7 @@ export default function LiteWizardPage() {
               <div>
                 <Button
                   onClick={() => setCurrentStep(2)}
-                  className="h-11 px-8 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm"
+                  className="h-11 px-8 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl text-sm shadow-md shadow-orange-500/20"
                 >
                   Continue to Story Vault <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -239,7 +239,7 @@ export default function LiteWizardPage() {
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                <Badge className="w-fit bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold text-[11px] px-2.5 py-0.5">
                   Step 2 of 5
                 </Badge>
                 <CardTitle className="text-xl font-extrabold tracking-tight">Your Saved Stories & Memories</CardTitle>
@@ -250,7 +250,7 @@ export default function LiteWizardPage() {
               <div>
                 <Button
                   onClick={() => setCurrentStep(3)}
-                  className="h-10 px-6 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
+                  className="h-10 px-6 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md shadow-orange-500/20"
                 >
                   Next: Generate Essay Ideas <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
@@ -258,8 +258,8 @@ export default function LiteWizardPage() {
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               {/* Quick Add Story */}
-              <div className="p-3.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 space-y-2">
-                <p className="text-xs font-bold text-indigo-500 uppercase">Add Personal Anecdote</p>
+              <div className="p-3.5 rounded-2xl border border-orange-500/20 bg-orange-500/5 space-y-2">
+                <p className="text-xs font-bold text-orange-500 uppercase">Add Personal Anecdote</p>
                 <Input
                   value={newStoryTitle}
                   onChange={(e) => setNewStoryTitle(e.target.value)}
@@ -274,7 +274,7 @@ export default function LiteWizardPage() {
                   className="text-xs"
                 />
                 <div className="flex justify-end">
-                  <Button size="sm" onClick={handleAddVaultEntry} className="h-8 text-xs font-bold bg-indigo-600 text-white">
+                  <Button size="sm" onClick={handleAddVaultEntry} className="h-8 text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 text-white">
                     Save to Vault
                   </Button>
                 </div>
@@ -289,7 +289,7 @@ export default function LiteWizardPage() {
                     <div key={story.id} className="p-3 rounded-xl border border-border/40 bg-card flex items-start justify-between gap-3">
                       <div>
                         <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                          <BookOpen className="h-3.5 w-3.5 text-indigo-500" /> {story.title}
+                          <BookOpen className="h-3.5 w-3.5 text-orange-500" /> {story.title}
                         </h4>
                         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{story.content}</p>
                       </div>
@@ -316,7 +316,7 @@ export default function LiteWizardPage() {
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                <Badge className="w-fit bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold text-[11px] px-2.5 py-0.5">
                   Step 3 of 5
                 </Badge>
                 <CardTitle className="text-xl font-extrabold tracking-tight">Generate Common App Concepts</CardTitle>
@@ -344,7 +344,7 @@ export default function LiteWizardPage() {
                 <Button
                   disabled={ideasLoading}
                   onClick={handleGenerateIdeas}
-                  className="h-11 px-6 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl w-full sm:w-auto"
+                  className="h-11 px-6 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl w-full sm:w-auto shadow-md shadow-orange-500/20"
                 >
                   {ideasLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
                   Brainstorm Ideas
@@ -355,10 +355,10 @@ export default function LiteWizardPage() {
               {ideas.length > 0 && (
                 <div className="space-y-3 pt-2">
                   {ideas.map((idea, idx) => (
-                    <div key={idea.id || idx} className="p-4 rounded-2xl border border-border/40 bg-card hover:border-indigo-500/40 transition-all space-y-2">
+                    <div key={idea.id || idx} className="p-4 rounded-2xl border border-border/40 bg-card hover:border-orange-500/40 transition-all space-y-2">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-base text-indigo-600 dark:text-indigo-400">{idea.title}</h3>
-                        <Badge variant="outline" className="text-xs font-bold border-indigo-500/30 text-indigo-500">
+                        <h3 className="font-bold text-base text-orange-600 dark:text-orange-400">{idea.title}</h3>
+                        <Badge variant="outline" className="text-xs font-bold border-orange-500/30 text-orange-500">
                           Fit: {idea.originalityScore}/100
                         </Badge>
                       </div>
@@ -369,7 +369,7 @@ export default function LiteWizardPage() {
                       <div className="flex justify-end pt-1">
                         <Button
                           onClick={() => handleSelectIdea(idea)}
-                          className="h-9 px-5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
+                          className="h-9 px-5 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl"
                         >
                           Write This Essay <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                         </Button>
@@ -387,7 +387,7 @@ export default function LiteWizardPage() {
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                <Badge className="w-fit bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold text-[11px] px-2.5 py-0.5">
                   Step 4 of 5
                 </Badge>
                 <CardTitle className="text-xl font-extrabold tracking-tight">Write Personal Statement</CardTitle>
@@ -405,7 +405,7 @@ export default function LiteWizardPage() {
                 <Button
                   disabled={!essayText.trim()}
                   onClick={handleRunFeedback}
-                  className="h-10 px-6 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md"
+                  className="h-10 px-6 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md shadow-orange-500/20"
                 >
                   Get Admissions Feedback <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
@@ -442,7 +442,7 @@ export default function LiteWizardPage() {
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                <Badge className="w-fit bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold text-[11px] px-2.5 py-0.5">
                   Step 5 of 5
                 </Badge>
                 <CardTitle className="text-xl font-extrabold tracking-tight">Admissions Rubric Feedback</CardTitle>
@@ -460,7 +460,7 @@ export default function LiteWizardPage() {
                 </Button>
                 <Button
                   onClick={handleStartNewEssay}
-                  className="h-9 px-4 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md"
+                  className="h-9 px-4 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md"
                 >
                   <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Start New Essay
                 </Button>
@@ -469,18 +469,18 @@ export default function LiteWizardPage() {
             <CardContent className="p-6 space-y-4">
               {feedbackLoading ? (
                 <div className="py-16 text-center space-y-3">
-                  <Loader2 className="h-10 w-10 text-indigo-500 animate-spin mx-auto" />
+                  <Loader2 className="h-10 w-10 text-orange-500 animate-spin mx-auto" />
                   <p className="text-sm font-bold text-foreground">Evaluating your Common App essay...</p>
                 </div>
               ) : feedback ? (
                 <div className="space-y-4">
                   {/* Score */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-card to-card border border-indigo-500/30 flex items-center justify-between">
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-500/10 via-card to-card border border-orange-500/30 flex items-center justify-between">
                     <div>
                       <h3 className="font-extrabold text-lg">Overall Admissions Fit Score</h3>
                       <p className="text-xs text-muted-foreground mt-0.5">{feedback.summary}</p>
                     </div>
-                    <div className="h-16 w-16 rounded-full bg-indigo-600 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
                       {feedback.overallScore}
                     </div>
                   </div>
@@ -508,7 +508,7 @@ export default function LiteWizardPage() {
                       {feedback.lineFeedback.map((fb, idx) => (
                         <div key={idx} className="p-3 rounded-xl bg-secondary/50 border border-border/40 text-xs space-y-1">
                           <p className="font-semibold italic text-muted-foreground">"{fb.original}"</p>
-                          <p className="font-bold text-indigo-500">💡 {fb.suggestion}</p>
+                          <p className="font-bold text-orange-500">💡 {fb.suggestion}</p>
                           <p className="text-muted-foreground">{fb.reasoning}</p>
                         </div>
                       ))}
@@ -519,7 +519,7 @@ export default function LiteWizardPage() {
                   <div className="pt-4 flex justify-center">
                     <Button
                       onClick={handleStartNewEssay}
-                      className="h-11 px-8 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md text-sm"
+                      className="h-11 px-8 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md text-sm"
                     >
                       <RotateCcw className="mr-2 h-4 w-4" /> Start Next Essay
                     </Button>

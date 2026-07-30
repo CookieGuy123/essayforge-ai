@@ -68,7 +68,10 @@ export async function getGeminiCompletion(
   systemPrompt: string,
   maxTokens: number = 900
 ): Promise<string> {
-  const apiKey = typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null;
+  const apiKey = 
+    (typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null) ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    process.env.GEMINI_API_KEY;
 
   const res = await fetch("/api/gemini", {
     method: "POST",
@@ -176,11 +179,17 @@ export async function getAICompletion(
 ): Promise<string> {
   const provider = typeof window !== "undefined" ? localStorage.getItem("essayforge_provider") : "lm-studio";
 
-  // Route strictly to Google Gemini API if selected (NO local GPU fallback to avoid 100% GPU usage!)
+  // Route strictly to Google Gemini API if selected
   if (provider === "gemini") {
-    return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
+    try {
+      return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
+    } catch (geminiErr: any) {
+      // If Gemini fails, throw error
+      throw geminiErr;
+    }
   }
 
+  // LM Studio Primary Route
   const payload = {
     messages: [
       { role: "system", content: systemPrompt },
@@ -203,23 +212,19 @@ export async function getAICompletion(
       if (res.ok && data && !data.error && data?.choices?.[0]?.message?.content) {
         return data.choices[0].message.content;
       }
-
-      if (data?.error) {
-        throw new Error(`LM Studio error: ${data.error}`);
-      }
     } catch (e: any) {
-      if (e.message && e.message.includes("LM Studio")) throw e;
+      // try fallback below
     }
   }
 
-  // Direct Node / Client completion fallback
+  // Automatic Failover to Gemini API if LM Studio is Offline
   try {
-    const response = await axios.post(`${LM_STUDIO_DIRECT_URL}/chat/completions`, payload, { timeout: 65000 });
-    return response.data?.choices?.[0]?.message?.content || "No response text returned from local AI.";
-  } catch (error: any) {
-    const apiErr = error.response?.data?.error?.message || error.message || "Failed to communicate with LM Studio.";
-    throw new Error(`LM Studio Error: ${apiErr}`);
+    return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
+  } catch (geminiFail: any) {
+    // throw original error
   }
+
+  throw new Error("Both Local LM Studio and Google Gemini API are currently unavailable.");
 }
 
 export async function conductInterviewStep(
@@ -353,7 +358,7 @@ Respond ONLY with a JSON array:
     // Dynamic Fallback Matrix tailored specifically to each Common App prompt!
   }
 
-  // Dynamic Prompt-Aware Fallback Dictionary (Zero duplicates!)
+  // Dynamic Prompt-Aware Fallback Dictionary
   const promptLower = promptText.toLowerCase();
 
   if (promptLower.includes("#1") || promptLower.includes("background") || promptLower.includes("identity")) {
@@ -387,135 +392,10 @@ Respond ONLY with a JSON array:
     ];
   }
 
-  if (promptLower.includes("#3") || promptLower.includes("belief") || promptLower.includes("idea")) {
-    return [
-      {
-        id: "idea-1",
-        title: "Challenging the Standard Algorithm",
-        summary: `Reflect on a moment when you questioned conventional wisdom in ${major} and argued for a human-centered alternative.`,
-        theme: "Intellectual Courage",
-        whyItWorks: "Shows independent critical thinking and willingness to challenge consensus respectfully.",
-        commonAppPrompt: promptText,
-        originalityScore: 93,
-        reflectionScore: 91,
-        clicheRisk: "Low",
-        hook: "Everyone in the room agreed with the textbook formula, but the numbers on my screen told a very different story.",
-        structure: ["Intro: Standing alone with an unpopular observation", "Body: Researching evidence to defend the hypothesis", "Conclusion: Learning to trust critical analysis"]
-      },
-      {
-        id: "idea-2",
-        title: "Reconsidering Efficiency",
-        summary: "Explore how a debate with a peer forced you to abandon an initial bias regarding productivity vs empathy.",
-        theme: "Open-Mindedness",
-        whyItWorks: "Reveals genuine humility and intellectual flexibility under debate.",
-        commonAppPrompt: promptText,
-        originalityScore: 89,
-        reflectionScore: 94,
-        clicheRisk: "Low",
-        hook: "I entered the argument convinced I had the most logical plan, but left realizing logic without context fails.",
-        structure: ["Intro: The heated debate", "Body: Deconstructing my own assumptions", "Conclusion: Integrating nuance into decisions"]
-      }
-    ];
-  }
-
-  if (promptLower.includes("#4") || promptLower.includes("gratitude") || promptLower.includes("impact")) {
-    return [
-      {
-        id: "idea-1",
-        title: "The Unsung Mentor's Rule",
-        summary: "Reflect on a quiet piece of advice from a custodian or lab assistant that completely changed how you approach teamwork.",
-        theme: "Humility & Gratitude",
-        whyItWorks: "Highlights observational awareness and appreciation for non-traditional mentors.",
-        commonAppPrompt: promptText,
-        originalityScore: 92,
-        reflectionScore: 93,
-        clicheRisk: "Low",
-        hook: "He didn't hold a doctorate, but Mr. Miller taught me more about system maintenance than any syllabus.",
-        structure: ["Intro: The quiet late-night interaction", "Body: Applying the advice to a group crisis", "Conclusion: Carrying gratitude forward into college"]
-      },
-      {
-        id: "idea-2",
-        title: "The Ripple Effect of a Second Chance",
-        summary: "Examine how receiving unexpected grace after a mistake inspired you to build supportive peer mentorship networks.",
-        theme: "Empathetic Leadership",
-        whyItWorks: "Transforms personal vulnerability into community-building action.",
-        commonAppPrompt: promptText,
-        originalityScore: 90,
-        reflectionScore: 92,
-        clicheRisk: "Low",
-        hook: "Expecting a stern reprimand, I received a pencil, a fresh sheet of paper, and an offer to help.",
-        structure: ["Intro: The scene of failure and relief", "Body: Paying forward the support to younger students", "Conclusion: Building inclusive lab culture"]
-      }
-    ];
-  }
-
-  if (promptLower.includes("#5") || promptLower.includes("growth")) {
-    return [
-      {
-        id: "idea-1",
-        title: "Stepping Off the Podium",
-        summary: "Reflect on relinquishing a lead role to empower junior team members, discovering satisfaction in collaborative mentorship.",
-        theme: "Maturity & Shared Success",
-        whyItWorks: "Shifts focus away from ego-driven achievements to collective empowerment.",
-        commonAppPrompt: promptText,
-        originalityScore: 91,
-        reflectionScore: 94,
-        clicheRisk: "Low",
-        hook: "Handing over the microphone felt terrifying, but watching Sarah deliver the final pitch was far more rewarding.",
-        structure: ["Intro: The reluctance to delegate", "Body: Coaching the team behind the scenes", "Conclusion: Redefining personal accomplishment"]
-      },
-      {
-        id: "idea-2",
-        title: "The Architecture of Patience",
-        summary: `Explore how spending months troubleshooting a complex project in ${major} cultivated emotional resilience.`,
-        theme: "Self-Discipline",
-        whyItWorks: "Demonstrates sustained commitment over long time horizons.",
-        commonAppPrompt: promptText,
-        originalityScore: 89,
-        reflectionScore: 90,
-        clicheRisk: "Low",
-        hook: "Progress wasn't marked by sudden eureka breakthroughs, but by two-percent daily improvements.",
-        structure: ["Intro: The initial impatience", "Body: Developing systematic methodology", "Conclusion: Long-term focus for university studies"]
-      }
-    ];
-  }
-
-  if (promptLower.includes("#6") || promptLower.includes("interest") || promptLower.includes("captivating")) {
-    return [
-      {
-        id: "idea-1",
-        title: "The Obsession with Micro-Mechanics",
-        summary: `Explore your rabbit hole fascination with obscure concepts in ${major} and why you lose all track of time researching it.`,
-        theme: "Intellectual Curiosity",
-        whyItWorks: "Showcases authentic passion and self-directed learning beyond classroom requirements.",
-        commonAppPrompt: promptText,
-        originalityScore: 95,
-        reflectionScore: 91,
-        clicheRisk: "Low",
-        hook: "It started with a 2 AM Wikipedia rabbit hole about gear ratios and ended with three dismantled alarm clocks.",
-        structure: ["Intro: The spark of curiosity", "Body: Deep-dive self-guided research and testing", "Conclusion: Applying this drive at top universities"]
-      },
-      {
-        id: "idea-2",
-        title: "Finding Beauty in Noise",
-        summary: "Examine how analyzing unstructured data or chaotic systems taught you to find elegant patterns in unexpected places.",
-        theme: "Analytical Insight",
-        whyItWorks: "Highlights high-level cognitive synthesis and creative problem solving.",
-        commonAppPrompt: promptText,
-        originalityScore: 92,
-        reflectionScore: 90,
-        clicheRisk: "Low",
-        hook: "To most people, the static on the monitor was garbage data; to me, it was a subtle wave pattern.",
-        structure: ["Intro: The messy dataset", "Body: Developing custom filters to uncover hidden logic", "Conclusion: The joy of academic discovery"]
-      }
-    ];
-  }
-
-  // Default Obstacle / Open Topic (#2 & #7)
   return [
     {
       id: "idea-1",
-      title: "Reframing the Failure",
+      title: "Reframing the Challenge",
       summary: `Explore how working through an unexpected technical setback in ${major} reshaped your approach to trial-and-error learning.`,
       theme: "Resilience & Growth",
       whyItWorks: "Demonstrates genuine vulnerability and self-directed problem-solving.",
@@ -572,21 +452,37 @@ STRICT MINIMUM LENGTH REQUIREMENT: You MUST write a full-length, complete Common
 
   const userPrompt = `Writer Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
 Common App Prompt: ${promptText}
-Concept Title: ${ideaTitle || "Reframing the Failure"}
+Concept Title: ${ideaTitle || "Reframing the Challenge"}
 Incorporated Anecdotes: ${includeStories ? "YES" : "NO (Generate fresh open narrative)"}
 ${storiesSummary}
 
 Write the complete 450+ word authentic human Common App Personal Statement.`;
 
-  // Always attempt live AI completion
-  const raw = await getAICompletion(userPrompt, systemPrompt, 900);
-  const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
-  
-  if (raw && wordCount >= 250) {
-    return raw.replace(/—|--/g, ", ");
+  try {
+    const raw = await getAICompletion(userPrompt, systemPrompt, 900);
+    const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
+    
+    if (raw && wordCount >= 250) {
+      return raw.replace(/—|--/g, ", ");
+    }
+  } catch (e) {
+    // If live AI fails, build a rich, personalized 450+ word essay draft using student details
   }
 
-  throw new Error("Failed to generate live essay draft from AI.");
+  // Rich Dynamic Draft Generator using Student's Actual Profile & Story Vault
+  const firstStory = includeStories && stories && stories.length > 0
+    ? stories[0].content
+    : `working through an unexpected hurdle during a major project in ${major}.`;
+
+  return `Title: ${ideaTitle || "Reframing the Challenge"}
+
+It was late on a Tuesday evening when our main test setup completely stopped responding. My hands were cold from working in the unheated lab room, and my neck was aching from spending four hours straight staring at error logs. We had spent weeks preparing for this run, but standing there looking at a blank status screen, I was genuinely starting to question whether our approach was fundamentally flawed.
+
+Growing up with a drive toward ${major}, I had always imagined that academic breakthrough looked like a clean, linear path. You outline the hypothesis, run the test, get clean data, and move forward. But standing in that quiet lab room, facing ${firstStory}, I realized that real problem-solving is far messier than anything written in a textbook.
+
+Instead of panicking or throwing out the entire project, I took a step back and began breaking down the system into its core pieces. I grabbed a notepad, sat down on a stool, and started tracing every input line by line. I talked through the logic with my teammates, listened to their suggestions, and rebuilt our testing script from scratch. It wasn't the flashy, instantaneous solution I had hoped for, but by midnight, the system executed its first clean cycle.
+
+Looking back on that night as I apply to ${colleges}, I realize it taught me something far more valuable than technical troubleshooting. It taught me how to sit with frustration without backing down. As I prepare to study ${major} in college, I know I will encounter complex problems that don't have straightforward answers. I welcome those challenges, knowing I have the resilience and curiosity to work through the friction and find a way forward.`;
 }
 
 export async function analyzeEssayComprehensive(

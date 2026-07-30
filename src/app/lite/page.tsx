@@ -187,7 +187,7 @@ export default function LiteWizardPage() {
         localStorage.setItem("essayforge_lite_essay_with_stories", draft);
         localStorage.setItem("essayforge_lite_essay", draft);
       } catch (e) {
-        setDraftWithStories(`Title: ${idea.title}\n\nHook:\n${idea.hook}\n\nDraft:\n`);
+        // Handled in aiService
       } finally {
         setAutoDraftLoading(false);
       }
@@ -213,7 +213,7 @@ export default function LiteWizardPage() {
         localStorage.setItem("essayforge_lite_essay_without_stories", draft);
       }
     } catch (e) {
-      // Fallback
+      // Handled in aiService
     } finally {
       setAutoDraftLoading(false);
     }
@@ -684,7 +684,7 @@ export default function LiteWizardPage() {
                   onClick={handleStartNewEssay}
                   className="h-9 px-4 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md whitespace-nowrap"
                 >
-                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Start New Essay
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Start Next Essay
                 </Button>
               </div>
             </CardHeader>

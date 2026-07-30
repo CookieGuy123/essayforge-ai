@@ -6,10 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { generateDetailedEssayIdeas, analyzeEssayComprehensive, DetailedEssayIdea, ComprehensiveEssayAnalysis } from "@/lib/aiService";
 import { 
-  Bot, 
   User, 
   Archive, 
   Sparkles, 
@@ -135,27 +133,9 @@ export default function LiteWizardPage() {
   const wordCount = essayText.split(/\s+/).filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center p-4 md:p-8">
-      {/* Lite Minimal Top Bar */}
-      <div className="w-full max-w-4xl flex items-center justify-between py-4 mb-6 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20">
-            <Bot className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-lg font-extrabold tracking-tight flex items-center gap-2">
-              EssayForge <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 font-bold border border-indigo-500/20">Lite MVP</span>
-            </h1>
-            <p className="text-xs text-muted-foreground">Minimal Common App Personal Statement Wizard</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-        </div>
-      </div>
-
+    <div className="w-full flex flex-col items-center">
       {/* Step Wizard Progress Bar */}
-      <div className="w-full max-w-4xl mb-8">
+      <div className="w-full max-w-4xl mb-6">
         <div className="flex items-center justify-between bg-card p-2 rounded-2xl border border-border/40 shadow-xs">
           {stepsList.map((step) => {
             const Icon = step.icon;

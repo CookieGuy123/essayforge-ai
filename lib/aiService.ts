@@ -330,18 +330,84 @@ export async function analyzeEssayComprehensive(
   profile?: any,
   voiceProfile?: any
 ): Promise<ComprehensiveEssayAnalysis> {
-  const systemPrompt = `You are an admissions dean. Evaluate essay draft concisely.
+  const wordCount = essayText.trim().split(/\s+/).filter(Boolean).length;
+
+  // Enforce Word Count Rules (Common App range is 250 - 650 words)
+  if (wordCount < 100) {
+    return {
+      overallScore: Math.min(25, Math.max(10, Math.round(wordCount * 0.8))),
+      authenticityScore: 20,
+      reflectionScore: 15,
+      specificityScore: 20,
+      storytellingScore: 15,
+      emotionalImpactScore: 15,
+      structureScore: 20,
+      grammarScore: 80,
+      alignmentScore: 25,
+      summary: `Draft is severely incomplete (${wordCount} words). Common App Personal Statements require at least 250 words (250–650 word range) to demonstrate narrative arc and self-reflection.`,
+      strengths: ["Template setup initialized"],
+      weaknesses: [
+        `Draft is far too short (${wordCount} words vs 250 word minimum)`,
+        "Lacks narrative body paragraphs and reflective conclusion"
+      ],
+      lineFeedback: [
+        {
+          original: essayText.slice(0, 60),
+          suggestion: "Write your full story (aim for 250 to 650 words).",
+          reasoning: "Admissions officers cannot evaluate incomplete single-word or placeholder drafts.",
+          type: "clarity"
+        }
+      ],
+      recommendations: [
+        "Expand your story into a complete draft of at least 250 words before requesting admissions feedback."
+      ]
+    };
+  }
+
+  if (wordCount < 250) {
+    return {
+      overallScore: Math.min(45, Math.round((wordCount / 250) * 45)),
+      authenticityScore: 40,
+      reflectionScore: 35,
+      specificityScore: 45,
+      storytellingScore: 40,
+      emotionalImpactScore: 35,
+      structureScore: 40,
+      grammarScore: 85,
+      alignmentScore: 40,
+      summary: `Draft is under the Common App 250-word minimum (${wordCount} / 250 words). Expand your narrative to provide deeper context and personal reflection.`,
+      strengths: ["Initial hook is established"],
+      weaknesses: [
+        `Below Common App 250-word minimum threshold (${wordCount} words)`,
+        "Needs deeper internal reflection and concluding insights"
+      ],
+      lineFeedback: [
+        {
+          original: essayText.slice(0, 60) + "...",
+          suggestion: "Develop the central conflict and personal transformation.",
+          reasoning: "Draft needs more depth to meet college admissions standards.",
+          type: "reflection"
+        }
+      ],
+      recommendations: [
+        `Add ${250 - wordCount} more words to meet the Common App 250-word minimum requirement.`
+      ]
+    };
+  }
+
+  const systemPrompt = `You are an admissions dean at a top university evaluating a Common App essay draft (${wordCount} words).
+If the draft is incomplete or missing body paragraphs, penalize the overall score accordingly.
 Respond ONLY with valid JSON (MAX 350 tokens):
 {
-  "overallScore": 86,
-  "authenticityScore": 90,
-  "reflectionScore": 84,
-  "specificityScore": 88,
-  "storytellingScore": 85,
-  "emotionalImpactScore": 82,
-  "structureScore": 87,
-  "grammarScore": 94,
-  "alignmentScore": 89,
+  "overallScore": 84,
+  "authenticityScore": 88,
+  "reflectionScore": 82,
+  "specificityScore": 85,
+  "storytellingScore": 83,
+  "emotionalImpactScore": 80,
+  "structureScore": 85,
+  "grammarScore": 90,
+  "alignmentScore": 86,
   "summary": "1-2 sentence overall impression.",
   "strengths": ["Vivid sensory detail in opening", "Authentic voice"],
   "weaknesses": ["Body paragraph transition feels abrupt"],
@@ -356,26 +422,32 @@ Respond ONLY with valid JSON (MAX 350 tokens):
   "recommendations": ["Expand self-reflection in the middle section."]
 }`;
 
-  const userPrompt = `Prompt: ${promptText}\nDraft:\n"""\n${essayText.slice(0, 1500)}\n"""`;
+  const userPrompt = `Prompt: ${promptText}\nDraft (${wordCount} words):\n"""\n${essayText.slice(0, 1800)}\n"""`;
 
   try {
     const raw = await getAICompletion(userPrompt, systemPrompt, 400);
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      // Apply strict word count penalty if LLM hallucinates high score on short draft
+      if (wordCount < 250 && parsed.overallScore > 45) {
+        parsed.overallScore = 45;
+      }
+      return parsed;
+    }
     return JSON.parse(raw);
   } catch (e) {
-    const wordCount = essayText.split(/\s+/).filter(Boolean).length;
     return {
-      overallScore: 85,
-      authenticityScore: 88,
-      reflectionScore: 82,
-      specificityScore: 86,
-      storytellingScore: 84,
-      emotionalImpactScore: 80,
-      structureScore: 85,
-      grammarScore: 92,
-      alignmentScore: 87,
-      summary: `Your essay of ${wordCount} words demonstrates strong authentic voice and clear narrative momentum.`,
+      overallScore: wordCount >= 250 ? 82 : 45,
+      authenticityScore: 85,
+      reflectionScore: 80,
+      specificityScore: 84,
+      storytellingScore: 82,
+      emotionalImpactScore: 78,
+      structureScore: 82,
+      grammarScore: 90,
+      alignmentScore: 84,
+      summary: `Your essay draft of ${wordCount} words demonstrates authentic voice. Expanding internal reflection will maximize admissions impact.`,
       strengths: [
         "Genuine tone free from artificial SAT jargon",
         "Clear narrative arc"

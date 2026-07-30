@@ -184,55 +184,50 @@ export async function getAICompletion(
   const geminiKey = typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null;
   const storedProvider = typeof window !== "undefined" ? localStorage.getItem("essayforge_provider") : null;
 
-  // Auto-default to Gemini if Gemini Key exists or if provider is not explicitly set to lm-studio
-  const provider = storedProvider || (geminiKey ? "gemini" : "gemini");
+  // Respect explicit provider setting if saved, otherwise default to Gemini
+  const provider = storedProvider || (geminiKey ? "gemini" : "lm-studio");
 
-  // Route strictly to Google Gemini API if selected or if defaulting to Gemini
-  if (provider === "gemini" || geminiKey) {
-    try {
-      return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
-    } catch (geminiErr: any) {
-      if (provider === "gemini") throw geminiErr;
-    }
-  }
+  // LM Studio Primary Route when explicitly selected
+  if (provider === "lm-studio") {
+    const payload = {
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.8,
+      max_tokens: maxTokens
+    };
 
-  // LM Studio Primary Route with fast 3-second timeout
-  const payload = {
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: prompt }
-    ],
-    temperature: 0.8,
-    max_tokens: maxTokens
-  };
+    if (typeof window !== "undefined") {
+      try {
+        const res = await fetch("/api/lm-studio", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
-  if (typeof window !== "undefined") {
-    try {
-      const res = await fetch("/api/lm-studio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(3000)
-      });
+        const data = await res.json().catch(() => null);
 
-      const data = await res.json().catch(() => null);
-
-      if (res.ok && data && !data.error && data?.choices?.[0]?.message?.content) {
-        return data.choices[0].message.content;
+        if (res.ok && data && !data.error && data?.choices?.[0]?.message?.content) {
+          return data.choices[0].message.content;
+        }
+      } catch (e: any) {
+        // failover below
       }
-    } catch (e: any) {
-      // try fallback below
     }
+
+    // Automatic Failover to Gemini API if LM Studio fails
+    if (geminiKey) {
+      try {
+        return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
+      } catch (geminiFail: any) {}
+    }
+
+    throw new Error("LM Studio is offline. Please start LM Studio or select Google Gemini in Settings ⚙️.");
   }
 
-  // Automatic Failover to Gemini API if LM Studio is Offline
-  try {
-    return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
-  } catch (geminiFail: any) {
-    // throw helpful exception
-  }
-
-  throw new Error("AI Engine is offline. Please check LM Studio or click Settings ⚙️ in the header to enter a Gemini API Key.");
+  // Google Gemini API Cloud Route
+  return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
 }
 
 export async function conductInterviewStep(

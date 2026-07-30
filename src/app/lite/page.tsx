@@ -18,7 +18,8 @@ import {
   Check, 
   Loader2, 
   BookOpen,
-  Trash2
+  Trash2,
+  RotateCcw
 } from "lucide-react";
 
 export default function LiteWizardPage() {
@@ -120,6 +121,16 @@ export default function LiteWizardPage() {
     } finally {
       setFeedbackLoading(false);
     }
+  };
+
+  // Reset essay draft & concepts for a New Essay while preserving Profile & Story Vault
+  const handleStartNewEssay = () => {
+    setEssayText("");
+    setIdeas([]);
+    setFeedback(null);
+    localStorage.removeItem("essayforge_lite_essay");
+    localStorage.removeItem("essayforge_lite_selected_idea");
+    setCurrentStep(3); // Jump to Step 3 (Essay Ideas) to brainstorm next essay
   };
 
   const stepsList = [
@@ -385,7 +396,7 @@ export default function LiteWizardPage() {
                   Draft your 650-word Common App essay below.
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
                   className={`text-xs font-bold ${wordCount > 650 ? "border-red-500 text-red-500" : "border-emerald-500 text-emerald-500"}`}
@@ -412,6 +423,17 @@ export default function LiteWizardPage() {
                 placeholder="Write your Common App Personal Statement draft here... (Target limit: 650 words)"
                 className="text-sm leading-relaxed"
               />
+
+              <div className="flex justify-start pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleStartNewEssay}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Start New Essay (Reset Draft)
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -429,13 +451,19 @@ export default function LiteWizardPage() {
                   Evaluated against Common App admissions standards.
                 </CardDescription>
               </div>
-              <div>
+              <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setCurrentStep(4)}
                   variant="outline"
                   className="h-9 text-xs font-semibold border-border/40"
                 >
                   <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back to Editor
+                </Button>
+                <Button
+                  onClick={handleStartNewEssay}
+                  className="h-9 px-4 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md"
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Start New Essay
                 </Button>
               </div>
             </CardHeader>
@@ -487,6 +515,16 @@ export default function LiteWizardPage() {
                       ))}
                     </div>
                   )}
+
+                  {/* Start New Essay Footer CTA */}
+                  <div className="pt-4 flex justify-center">
+                    <Button
+                      onClick={handleStartNewEssay}
+                      className="h-11 px-8 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md text-sm"
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" /> Start Next Essay
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground text-center py-8">Click "Get Admissions Feedback" in Step 4 to analyze your essay.</p>

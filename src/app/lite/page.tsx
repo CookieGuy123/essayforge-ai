@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { conductInterviewStep, generateDetailedEssayIdeas, analyzeEssayComprehensive, DetailedEssayIdea, ComprehensiveEssayAnalysis } from "@/lib/aiService";
+import { generateDetailedEssayIdeas, analyzeEssayComprehensive, DetailedEssayIdea, ComprehensiveEssayAnalysis } from "@/lib/aiService";
 import { 
   Bot, 
   User, 
-  MessageSquareCode, 
   Archive, 
   Sparkles, 
   PenTool, 
@@ -21,9 +20,7 @@ import {
   Check, 
   Loader2, 
   Plus, 
-  CheckCircle2, 
   ExternalLink,
-  RefreshCw,
   BookOpen,
   Trash2
 } from "lucide-react";
@@ -34,32 +31,22 @@ export default function LiteWizardPage() {
   // Step 1 State: Profile
   const [profile, setProfile] = useState({ name: "", intendedMajor: "", colleges: "" });
 
-  // Step 2 State: Interview
-  const [chatMessages, setChatMessages] = useState<Array<{ id: string; sender: "ai" | "user"; text: string }>>([
-    { id: "1", sender: "ai", text: "Welcome! Tell me about a challenge, project, or moment in high school that changed how you see things." }
-  ]);
-  const [chatInput, setChatInput] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-
-  // Step 3 State: Story Vault
+  // Step 2 State: Story Vault
   const [vaultStories, setVaultStories] = useState<Array<{ id: string; title: string; content: string }>>([]);
   const [newStoryTitle, setNewStoryTitle] = useState("");
   const [newStoryContent, setNewStoryContent] = useState("");
 
-  // Step 4 State: Ideas
+  // Step 3 State: Ideas
   const [selectedPrompt, setSelectedPrompt] = useState("Common App #2: Overcoming Obstacles");
   const [ideas, setIdeas] = useState<DetailedEssayIdea[]>([]);
   const [ideasLoading, setIdeasLoading] = useState(false);
-  const [chosenIdea, setChosenIdea] = useState<DetailedEssayIdea | null>(null);
 
-  // Step 5 State: Essay Writer
+  // Step 4 State: Essay Writer
   const [essayText, setEssayText] = useState("");
 
-  // Step 6 State: Feedback
+  // Step 5 State: Feedback
   const [feedback, setFeedback] = useState<ComprehensiveEssayAnalysis | null>(null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
-
-  const chatRef = useRef<HTMLDivElement>(null);
 
   // Initialize from LocalStorage
   useEffect(() => {
@@ -70,6 +57,16 @@ export default function LiteWizardPage() {
     const savedStories = localStorage.getItem("essayforge_lite_stories");
     if (savedStories) {
       try { setVaultStories(JSON.parse(savedStories)); } catch (e) {}
+    } else {
+      const defaultStory = [
+        {
+          id: "1",
+          title: "Overcoming Robot Sensor Malfunction",
+          content: "During regionals, our robot's optical sensor failed. Instead of giving up, I rewrote the autonomous loop to rely on wheel encoder counts in 15 minutes."
+        }
+      ];
+      setVaultStories(defaultStory);
+      localStorage.setItem("essayforge_lite_stories", JSON.stringify(defaultStory));
     }
     const savedEssay = localStorage.getItem("essayforge_lite_essay");
     if (savedEssay) {
@@ -84,40 +81,6 @@ export default function LiteWizardPage() {
     localStorage.setItem("essayforge_lite_profile", JSON.stringify(updated));
   };
 
-  // Step 2 Chat Send
-  const handleChatSend = async () => {
-    if (!chatInput.trim() || aiLoading) return;
-    const userMsg = { id: Date.now().toString(), sender: "user" as const, text: chatInput.trim() };
-    const updated = [...chatMessages, userMsg];
-    setChatMessages(updated);
-    setChatInput("");
-    setAiLoading(true);
-
-    try {
-      const history = updated.map(m => ({
-        role: m.sender === "user" ? ("user" as const) : ("assistant" as const),
-        content: m.text
-      }));
-      const reply = await conductInterviewStep(history, profile);
-      setChatMessages([...updated, { id: (Date.now() + 1).toString(), sender: "ai", text: reply }]);
-    } catch (e) {
-      setChatMessages([...updated, { id: (Date.now() + 1).toString(), sender: "ai", text: "Got it! Feel free to save this memory below and move to the next step." }]);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const saveMemoryToVault = (text: string) => {
-    const newEntry = {
-      id: Date.now().toString(),
-      title: text.slice(0, 40) + "...",
-      content: text
-    };
-    const updated = [newEntry, ...vaultStories];
-    setVaultStories(updated);
-    localStorage.setItem("essayforge_lite_stories", JSON.stringify(updated));
-  };
-
   const handleAddVaultEntry = () => {
     if (!newStoryTitle.trim() || !newStoryContent.trim()) return;
     const newEntry = { id: Date.now().toString(), title: newStoryTitle.trim(), content: newStoryContent.trim() };
@@ -128,7 +91,7 @@ export default function LiteWizardPage() {
     setNewStoryContent("");
   };
 
-  // Step 4 Ideas Generator
+  // Ideas Generator
   const handleGenerateIdeas = async () => {
     setIdeasLoading(true);
     try {
@@ -142,18 +105,17 @@ export default function LiteWizardPage() {
   };
 
   const handleSelectIdea = (idea: DetailedEssayIdea) => {
-    setChosenIdea(idea);
     const initialDraft = essayText || `Title: ${idea.title}\n\nHook:\n${idea.hook}\n\nDraft:\n`;
     setEssayText(initialDraft);
     localStorage.setItem("essayforge_lite_essay", initialDraft);
-    setCurrentStep(5);
+    setCurrentStep(4);
   };
 
-  // Step 6 Feedback Generator
+  // Feedback Generator
   const handleRunFeedback = async () => {
     if (!essayText.trim()) return;
     setFeedbackLoading(true);
-    setCurrentStep(6);
+    setCurrentStep(5);
     try {
       const res = await analyzeEssayComprehensive(essayText, selectedPrompt, profile);
       setFeedback(res);
@@ -166,11 +128,10 @@ export default function LiteWizardPage() {
 
   const stepsList = [
     { num: 1, name: "Profile", icon: User },
-    { num: 2, name: "Interview", icon: MessageSquareCode },
-    { num: 3, name: "Vault", icon: Archive },
-    { num: 4, name: "Ideas", icon: Sparkles },
-    { num: 5, name: "Write", icon: PenTool },
-    { num: 6, name: "Feedback", icon: BrainCircuit },
+    { num: 2, name: "Story Vault", icon: Archive },
+    { num: 3, name: "Ideas", icon: Sparkles },
+    { num: 4, name: "Write Essay", icon: PenTool },
+    { num: 5, name: "AI Feedback", icon: BrainCircuit },
   ];
 
   const wordCount = essayText.split(/\s+/).filter(Boolean).length;
@@ -235,9 +196,9 @@ export default function LiteWizardPage() {
         {currentStep === 1 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader>
-              <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 1 of 6</Badge>
+              <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 1 of 5</Badge>
               <CardTitle className="text-xl">Common App Student Profile</CardTitle>
-              <CardDescription>Tell us a little bit about yourself to customize your essay concepts.</CardDescription>
+              <CardDescription>Enter your details to customize your personal statement concepts.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -274,100 +235,36 @@ export default function LiteWizardPage() {
                   onClick={() => setCurrentStep(2)}
                   className="h-11 px-8 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm"
                 >
-                  Continue to Story Discovery <ArrowRight className="ml-2 h-4 w-4" />
+                  Continue to Story Vault <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* STEP 2: AI INTERVIEW */}
+        {/* STEP 2: STORY VAULT */}
         {currentStep === 2 && (
-          <Card className="border-border/40 shadow-sm flex flex-col h-[520px] animate-card-pop">
-            <CardHeader className="py-4 border-b border-border/40 flex flex-row items-center justify-between">
-              <div>
-                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 2 of 6</Badge>
-                <CardTitle className="text-lg">AI Story Discovery Chat</CardTitle>
-              </div>
-              <Button
-                onClick={() => setCurrentStep(3)}
-                className="h-9 px-4 text-xs font-bold bg-indigo-600 text-white rounded-xl"
-              >
-                Go to Story Vault ({vaultStories.length}) <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Button>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
-              <div ref={chatRef} className="flex-1 overflow-y-auto space-y-3 pr-2">
-                {chatMessages.map((msg) => (
-                  <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
-                    <div className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed max-w-[85%] ${
-                      msg.sender === "user"
-                        ? "bg-indigo-600 text-white rounded-br-none font-medium"
-                        : "bg-secondary text-foreground rounded-bl-none border border-border/40"
-                    }`}>
-                      {msg.text}
-                    </div>
-                    {msg.sender === "user" && (
-                      <button
-                        onClick={() => saveMemoryToVault(msg.text)}
-                        className="text-[11px] font-bold text-indigo-500 hover:underline mt-1 flex items-center gap-1"
-                      >
-                        <Plus className="h-3 w-3" /> Save to Vault
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {aiLoading && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
-                    <span>AI Coach is pondering...</span>
-                  </div>
-                )}
-              </div>
-              <div className="pt-3 border-t border-border/40 flex items-center gap-2">
-                <Textarea
-                  rows={2}
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
-                  placeholder="Type a story or response..."
-                  className="text-xs sm:text-sm resize-none"
-                />
-                <Button
-                  disabled={aiLoading || !chatInput.trim()}
-                  onClick={handleChatSend}
-                  className="h-10 px-5 font-bold bg-indigo-600 text-white rounded-xl shrink-0"
-                >
-                  Send
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* STEP 3: STORY VAULT */}
-        {currentStep === 3 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 3 of 6</Badge>
-                <CardTitle className="text-xl">Your Saved Stories</CardTitle>
+                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 2 of 5</Badge>
+                <CardTitle className="text-xl">Your Saved Stories & Memories</CardTitle>
               </div>
               <Button
-                onClick={() => setCurrentStep(4)}
-                className="h-10 px-6 font-bold bg-indigo-600 text-white rounded-xl"
+                onClick={() => setCurrentStep(3)}
+                className="h-10 px-6 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
               >
                 Next: Generate Essay Ideas <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Quick Add Story */}
-              <div className="p-3 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 space-y-2">
-                <p className="text-xs font-bold text-indigo-500 uppercase">Quick Add Anecdote</p>
+              <div className="p-3.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 space-y-2">
+                <p className="text-xs font-bold text-indigo-500 uppercase">Add Personal Anecdote</p>
                 <Input
                   value={newStoryTitle}
                   onChange={(e) => setNewStoryTitle(e.target.value)}
-                  placeholder="Story Title (e.g. Fixing the Sensor)"
+                  placeholder="Story Title (e.g. Fixing the Engine)"
                   className="h-9 text-xs font-bold"
                 />
                 <Textarea
@@ -387,7 +284,7 @@ export default function LiteWizardPage() {
               {/* Story Cards */}
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {vaultStories.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-6">No stories saved yet. Add one above or chat in Step 2!</p>
+                  <p className="text-xs text-muted-foreground text-center py-6">No stories saved yet. Add one above!</p>
                 ) : (
                   vaultStories.map((story) => (
                     <div key={story.id} className="p-3 rounded-xl border border-border/40 bg-card flex items-start justify-between gap-3">
@@ -415,11 +312,11 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 4: ESSAY IDEAS */}
-        {currentStep === 4 && (
+        {/* STEP 3: ESSAY IDEAS */}
+        {currentStep === 3 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader>
-              <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 4 of 6</Badge>
+              <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 3 of 5</Badge>
               <CardTitle className="text-xl">Generate Common App Concepts</CardTitle>
               <CardDescription>Select a Common App prompt and generate 3 custom essay concepts.</CardDescription>
             </CardHeader>
@@ -480,12 +377,12 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 5: WRITE ESSAY */}
-        {currentStep === 5 && (
+        {/* STEP 4: WRITE ESSAY */}
+        {currentStep === 4 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div>
-                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 5 of 6</Badge>
+                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 4 of 5</Badge>
                 <CardTitle className="text-xl">Write Personal Statement</CardTitle>
               </div>
               <div className="flex items-center gap-3">
@@ -519,16 +416,16 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 6: FEEDBACK */}
-        {currentStep === 6 && (
+        {/* STEP 5: FEEDBACK */}
+        {currentStep === 5 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div>
-                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 6 of 6</Badge>
+                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 5 of 5</Badge>
                 <CardTitle className="text-xl">Admissions Rubric Feedback</CardTitle>
               </div>
               <Button
-                onClick={() => setCurrentStep(5)}
+                onClick={() => setCurrentStep(4)}
                 variant="outline"
                 className="h-9 text-xs font-semibold border-border/40"
               >
@@ -585,7 +482,7 @@ export default function LiteWizardPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground text-center py-8">Click "Get Admissions Feedback" in Step 5 to analyze your essay.</p>
+                <p className="text-xs text-muted-foreground text-center py-8">Click "Get Admissions Feedback" in Step 4 to analyze your essay.</p>
               )}
             </CardContent>
           </Card>

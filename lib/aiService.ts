@@ -200,11 +200,15 @@ export async function getAICompletion(
 
       const data = await res.json().catch(() => null);
 
-      if (res.ok && data && !data.error) {
-        return data?.choices?.[0]?.message?.content || "No response text returned from local AI.";
+      if (res.ok && data && !data.error && data?.choices?.[0]?.message?.content) {
+        return data.choices[0].message.content;
       }
-    } catch (e) {
-      // fallback to direct client fetch
+
+      if (data?.error) {
+        throw new Error(`LM Studio error: ${data.error}`);
+      }
+    } catch (e: any) {
+      if (e.message && e.message.includes("LM Studio")) throw e;
     }
   }
 
@@ -511,7 +515,7 @@ Respond ONLY with a JSON array:
   return [
     {
       id: "idea-1",
-      title: "The Unseen Iteration",
+      title: "Reframing the Failure",
       summary: `Explore how working through an unexpected technical setback in ${major} reshaped your approach to trial-and-error learning.`,
       theme: "Resilience & Growth",
       whyItWorks: "Demonstrates genuine vulnerability and self-directed problem-solving.",
@@ -568,47 +572,21 @@ STRICT MINIMUM LENGTH REQUIREMENT: You MUST write a full-length, complete Common
 
   const userPrompt = `Writer Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
 Common App Prompt: ${promptText}
-Concept Title: ${ideaTitle || "The Unseen Iteration"}
+Concept Title: ${ideaTitle || "Reframing the Failure"}
 Incorporated Anecdotes: ${includeStories ? "YES" : "NO (Generate fresh open narrative)"}
 ${storiesSummary}
 
 Write the complete 450+ word authentic human Common App Personal Statement.`;
 
-  try {
-    const raw = await getAICompletion(userPrompt, systemPrompt, 900);
-    const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
-    
-    if (raw && wordCount >= 300) {
-      return raw.replace(/—|--/g, ", ");
-    }
-  } catch (e) {
-    // fallback draft
+  // Always attempt live AI completion
+  const raw = await getAICompletion(userPrompt, systemPrompt, 900);
+  const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
+  
+  if (raw && wordCount >= 250) {
+    return raw.replace(/—|--/g, ", ");
   }
 
-  // Guaranteed 450+ Word High-Quality Authentic Human Fallback Draft
-  if (includeStories) {
-    const firstStory = stories && stories.length > 0 ? stories[0].content : "our robot's optical sensor failed mid-match, forcing me to rewrite our autonomous navigation loop relying on wheel encoder counts in fifteen minutes.";
-    
-    return `Title: ${ideaTitle || "The Unseen Iteration"}
-
-The garage smelled like hot solder and cold coffee. It was 11:45 PM on a Tuesday, three days before regionals, and nothing was working. We had spent four months building a robot meant to navigate an obstacle grid automatically, but every time I hit the start button, it drove straight into the nearest folding table. My hands were stained with grease, my neck hurt from leaning over the chassis, and I was genuinely starting to doubt why I signed up to head the software team in the first place.
-
-When you spend years telling people you want to major in ${major}, you build up this idea in your head that problem-solving is clean. You write out logic on a whiteboard, compile the code, hit run, and watch the solution unfold. But reality is rarely that neat. In that quiet room, looking at a broken optical sensor and a room full of tired teammates, I realized that my neatly organized mental model was completely useless. ${firstStory}
-
-I sat down on the concrete floor with my laptop on my knees. Instead of trying to force the broken sensor to read data it clearly couldn't process, I started stripping away lines of code. I went back to basic geometry, calculating wheel rotation counts instead of optical distances. It wasn't the elegant, high-tech algorithm I had bragged about in our team notebook. It was clunky, simple, and required three manual calibration checks before every run. But when I pushed the code to the controller at midnight, the robot turned ninety degrees, moved four feet forward, and stopped precisely on the tape line.
-
-That night didn't feel like a movie turning point. I didn't have some profound epiphany about my future. But looking back now as I apply to ${colleges}, I realize it taught me something far more useful than software syntax. It taught me how to sit with frustration without panicking. When I get to college to study ${major}, I know I am going to face problems that don't have neat textbook answers. I am completely fine with that, because I know I can sit on a cold floor, admit when something isn't working, and rebuild a solution from scratch.`;
-  }
-
-  return `Title: ${ideaTitle || "Reframing the Problem"}
-
-I have a habit of keeping small scraps of paper in my desk drawer. Most of them are filled with quick sketches, half-written code functions, or notes from teachers that I meant to organize later. Last month, while cleaning out my workspace, I found a index card from sophomore year where I had written: "If it isn't perfect, start over."
-
-For a long time, I lived by that rule. I thought that commitment to ${major} meant executing every project flawlessly on the first attempt. If an essay draft felt clunky, I deleted the document. If a coding project threw an unexpected syntax error, I assumed I had chosen the wrong approach entirely. I confused perfection with competence, and it made every new challenge feel terrifyingly high-stakes.
-
-The shift happened gradually, not in a single dramatic moment. It came through working on open-ended problems where there was no single right answer to copy from a textbook. I began to realize that the most interesting insights didn't come from getting things right on the first try. They came from the messy middle, where you have to test three bad ideas before discovering one that actually works. I started leaving my imperfect drafts open on my desktop instead of deleting them.
-
-Looking ahead to my college journey studying ${major} at universities like ${colleges}, I am glad I stopped holding myself to an impossible standard of instant perfection. College is supposed to be challenging, and I am excited to enter a community where questioning assumptions and working through trial-and-error is celebrated. I still keep scraps of paper on my desk, but now I write a different reminder: "Embrace the iteration."`;
+  throw new Error("Failed to generate live essay draft from AI.");
 }
 
 export async function analyzeEssayComprehensive(

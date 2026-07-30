@@ -30,7 +30,10 @@ import {
   MicOff,
   Wand2,
   FileText,
-  AlertCircle
+  AlertCircle,
+  HelpCircle,
+  Lightbulb,
+  PlusCircle
 } from "lucide-react";
 
 export default function LiteWizardPage() {
@@ -173,6 +176,14 @@ export default function LiteWizardPage() {
     localStorage.setItem("essayforge_lite_stories", JSON.stringify(updated));
     setNewStoryTitle("");
     setNewStoryContent("");
+  };
+
+  // Preset Story Starters (1-click helper for users with no stories)
+  const handleAddPresetStory = (title: string, content: string) => {
+    const newEntry = { id: Date.now().toString(), title, content };
+    const updated = [newEntry, ...vaultStories];
+    setVaultStories(updated);
+    localStorage.setItem("essayforge_lite_stories", JSON.stringify(updated));
   };
 
   // Ideas Generator
@@ -420,6 +431,47 @@ export default function LiteWizardPage() {
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
+
+              {/* Interactive Story Assistant Helper Banner */}
+              {vaultStories.length === 0 && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-card border border-orange-500/30 space-y-3">
+                  <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-extrabold text-sm">
+                    <Lightbulb className="h-4 w-4 text-orange-500" />
+                    <span>Have no stories saved? We can help you extract a memory!</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    College admissions officers look for real-life experiences. Click any quick story starter below or use 🎙️ Voice Dictation to speak a story aloud!
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleAddPresetStory("Fixing a Gearbox & Reversed Spacer", "We spent three days building a custom gearbox that kept jamming. I found a tiny reversed spacer that shifted the shaft by 1mm.")}
+                      className="h-8 text-xs font-semibold border-orange-500/30 text-foreground hover:bg-orange-500/10 whitespace-nowrap"
+                    >
+                      <PlusCircle className="mr-1.5 h-3.5 w-3.5 text-orange-500" /> ⚙️ Gearbox & Spacer Error
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleAddPresetStory("Fixing a Car Engine", "I spent weekends working on an old car engine, getting my hands greasy trying to figure out why the combustion cycle kept failing.")}
+                      className="h-8 text-xs font-semibold border-orange-500/30 text-foreground hover:bg-orange-500/10 whitespace-nowrap"
+                    >
+                      <PlusCircle className="mr-1.5 h-3.5 w-3.5 text-orange-500" /> 🚗 Old Car Engine Repair
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleAddPresetStory("Robot Sensor Failure at Regionals", "During regional robotics, our optical sensor died right before autonomous mode. I rewrote the loop to use wheel encoders in 15 minutes.")}
+                      className="h-8 text-xs font-semibold border-orange-500/30 text-foreground hover:bg-orange-500/10 whitespace-nowrap"
+                    >
+                      <PlusCircle className="mr-1.5 h-3.5 w-3.5 text-orange-500" /> 🤖 Robot Sensor Malfunction
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Add Story with Voice Dictation */}
               <div className="p-4 rounded-2xl border border-orange-500/20 bg-orange-500/5 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -527,6 +579,19 @@ export default function LiteWizardPage() {
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
+              {/* Skip Step 2 Warning Banner */}
+              {vaultStories.length === 0 && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span>Adding at least 1 personal memory in Step 2 unlocks personalized concepts tailored to your life!</span>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => setCurrentStep(2)} className="h-7 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500/20">
+                    Add Story <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row items-center gap-3">
                 <select
                   value={selectedPrompt}
@@ -553,7 +618,7 @@ export default function LiteWizardPage() {
               </div>
 
               {/* Ideas Display */}
-              {ideas.length > 0 && (
+              {ideas.length > 0 ? (
                 <div className="space-y-3 pt-2">
                   {ideas.map((idea, idx) => (
                     <div key={idea.id || idx} className="p-4 rounded-2xl border border-border/40 bg-card hover:border-orange-500/40 transition-all space-y-2">
@@ -577,6 +642,11 @@ export default function LiteWizardPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 space-y-3 bg-secondary/20 rounded-2xl border border-dashed border-border/40">
+                  <Sparkles className="h-8 w-8 text-orange-500 mx-auto" />
+                  <p className="text-xs text-muted-foreground">Click "Brainstorm Ideas" above to generate unique essay angles for {selectedPrompt}!</p>
                 </div>
               )}
             </CardContent>
@@ -797,6 +867,27 @@ export default function LiteWizardPage() {
                       {currentFeedback.overallScore}
                     </div>
                   </div>
+
+                  {/* Organic Score Upgrade Suggestion Box for Low Score / No Stories */}
+                  {activeFeedbackTab === "without" && currentFeedback.overallScore < 85 && (
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-500/15 via-amber-500/10 to-card border border-orange-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-extrabold text-sm text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                          <Lightbulb className="h-4 w-4 text-orange-500" /> Want to boost this score from {currentFeedback.overallScore} to 92+?
+                        </h4>
+                        <Button
+                          size="sm"
+                          onClick={() => setCurrentStep(2)}
+                          className="h-8 px-4 text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl shadow-xs whitespace-nowrap shrink-0"
+                        >
+                          Add Story in Step 2 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        This essay scored {currentFeedback.overallScore}/100 because it lacks concrete personal memories. Adding even 1 real anecdote to your Story Vault boosts your Authenticity and Specificity scores to 92+!
+                      </p>
+                    </div>
+                  )}
 
                   {/* Subscores Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">

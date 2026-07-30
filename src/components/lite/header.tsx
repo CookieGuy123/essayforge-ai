@@ -76,27 +76,27 @@ export function LiteHeader() {
         </div>
       </div>
 
-      {/* AI Settings Modal */}
+      {/* AI Settings Modal Overlay (Fixed Viewport Centered) */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-card-pop relative">
-            <div className="flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+          <div className="bg-card border border-border/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-card-pop my-auto max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between sticky top-0 bg-card pb-2 border-b border-border/20 z-10">
               <h3 className="font-extrabold text-lg flex items-center gap-2">
                 <Settings className="h-5 w-5 text-orange-500" /> AI Engine Settings
               </h3>
-              <button onClick={() => setShowSettings(false)} className="text-muted-foreground hover:text-foreground p-1">
+              <button onClick={() => setShowSettings(false)} className="text-muted-foreground hover:text-foreground p-1.5 rounded-xl hover:bg-secondary">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 pt-1">
               <label className="text-xs font-bold uppercase text-muted-foreground">Select Active AI Provider</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => handleSaveSettings("lm-studio")}
                   className={`p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
                     provider === "lm-studio"
-                      ? "border-orange-500 bg-orange-500/10 text-foreground font-bold"
+                      ? "border-orange-500 bg-orange-500/10 text-foreground font-bold shadow-xs"
                       : "border-border/40 hover:bg-secondary/50 text-muted-foreground"
                   }`}
                 >
@@ -110,7 +110,7 @@ export function LiteHeader() {
                   onClick={() => handleSaveSettings("gemini")}
                   className={`p-3 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
                     provider === "gemini"
-                      ? "border-amber-500 bg-amber-500/10 text-foreground font-bold"
+                      ? "border-amber-500 bg-amber-500/10 text-foreground font-bold shadow-xs"
                       : "border-border/40 hover:bg-secondary/50 text-muted-foreground"
                   }`}
                 >
@@ -123,29 +123,29 @@ export function LiteHeader() {
             </div>
 
             {provider === "gemini" && (
-              <div className="space-y-2 pt-2 border-t border-border/40">
+              <div className="space-y-2 pt-3 border-t border-border/40">
                 <label className="text-xs font-bold uppercase text-muted-foreground">Gemini API Key</label>
                 <Input
                   type="password"
                   value={geminiKey}
                   onChange={(e) => handleSaveSettings("gemini", e.target.value)}
                   placeholder="Paste AI Studio Key (AIzaSy...)"
-                  className="h-10 text-xs"
+                  className="h-10 text-xs font-medium"
                 />
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Get your free Gemini API key at <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" className="text-orange-500 underline font-semibold">aistudio.google.com</a> or put it in your <code className="bg-muted px-1 py-0.5 rounded text-orange-400">.env.local</code> file as <code className="bg-muted px-1 py-0.5 rounded text-orange-400">GEMINI_API_KEY</code>.
                 </p>
               </div>
             )}
 
             {savedSuccess && (
-              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold flex items-center justify-center gap-1.5">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold flex items-center justify-center gap-1.5">
                 <Check className="h-4 w-4" /> AI Engine Settings Saved!
               </div>
             )}
 
             <div className="flex justify-end pt-2">
-              <Button onClick={() => setShowSettings(false)} className="h-9 px-5 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl">
+              <Button onClick={() => setShowSettings(false)} className="h-10 px-6 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl shadow-md">
                 Done
               </Button>
             </div>

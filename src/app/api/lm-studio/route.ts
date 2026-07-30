@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const LOCAL_ENDPOINTS = [
-  process.env.LM_STUDIO_URL || "http://127.0.0.1:1234/v1",
+  process.env.NEXT_PUBLIC_LM_STUDIO_URL || process.env.LM_STUDIO_URL || "http://127.0.0.1:1234/v1",
   "http://127.0.0.1:1234/v1",
   "http://localhost:1234/v1"
 ];
@@ -10,18 +10,19 @@ async function getActiveModel(): Promise<{ endpoint: string; modelId: string | n
   for (const endpoint of LOCAL_ENDPOINTS) {
     if (!endpoint) continue;
     try {
-      const res = await fetch(`${endpoint}/models`, {
+      const cleanEndpoint = endpoint.replace(/\/+$/, "");
+      const res = await fetch(`${cleanEndpoint}/models`, {
         cache: 'no-store',
-        signal: AbortSignal.timeout(4000)
+        signal: AbortSignal.timeout(6000)
       });
 
       if (res.ok) {
         const data = await res.json();
         const models = data?.data || [];
         if (models.length > 0) {
-          return { endpoint, modelId: models[0].id, isLoaded: true };
+          return { endpoint: cleanEndpoint, modelId: models[0].id, isLoaded: true };
         }
-        return { endpoint, modelId: null, isLoaded: false };
+        return { endpoint: cleanEndpoint, modelId: null, isLoaded: false };
       }
     } catch (e) {
       // try next
@@ -36,9 +37,10 @@ export async function GET() {
   for (const endpoint of LOCAL_ENDPOINTS) {
     if (!endpoint) continue;
     try {
-      const res = await fetch(`${endpoint}/models`, {
+      const cleanEndpoint = endpoint.replace(/\/+$/, "");
+      const res = await fetch(`${cleanEndpoint}/models`, {
         cache: 'no-store',
-        signal: AbortSignal.timeout(4000)
+        signal: AbortSignal.timeout(6000)
       });
 
       if (res.ok) {
@@ -55,7 +57,7 @@ export async function GET() {
           modelsCount: models.length,
           latencyMs: latency,
           lastRequestTime: new Date().toLocaleTimeString(),
-          endpoint,
+          endpoint: cleanEndpoint,
           warning: !isLoaded ? "LM Studio server is running, but no AI model is loaded into memory! Please click 'Load Model' in LM Studio." : undefined
         });
       }
@@ -70,7 +72,7 @@ export async function GET() {
     modelName: "Offline",
     modelsCount: 0,
     latencyMs: 0,
-    error: "LM Studio server is offline. Please start localtunnel or set LM_STUDIO_URL in Vercel."
+    error: "LM Studio server is offline. Please check your cloudflared tunnel or NEXT_PUBLIC_LM_STUDIO_URL in Vercel."
   });
 }
 
@@ -98,7 +100,8 @@ export async function POST(req: Request) {
     for (const ep of LOCAL_ENDPOINTS) {
       if (!ep) continue;
       try {
-        const res = await fetch(`${ep}/chat/completions`, {
+        const cleanEndpoint = ep.replace(/\/+$/, "");
+        const res = await fetch(`${cleanEndpoint}/chat/completions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

@@ -1,6 +1,10 @@
 import axios from "axios";
 
-export const LM_STUDIO_DIRECT_URL = process.env.LM_STUDIO_URL || "http://127.0.0.1:1234/v1";
+export const LM_STUDIO_DIRECT_URL = (
+  process.env.NEXT_PUBLIC_LM_STUDIO_URL ||
+  process.env.LM_STUDIO_URL ||
+  "http://127.0.0.1:1234/v1"
+).replace(/\/+$/, "");
 
 export interface LMStudioStatus {
   online: boolean;
@@ -63,23 +67,56 @@ export async function checkLMStudioStatus(): Promise<LMStudioStatus> {
     try {
       const res = await fetch("/api/lm-studio", { cache: "no-store" });
       const data = await res.json();
-      return data;
-    } catch (e: any) {
-      return {
-        online: false,
-        modelLoaded: false,
-        modelName: "Offline",
-        modelsCount: 0,
-        latencyMs: 0,
-        error: e.message || "Failed to reach LM Studio diagnostic proxy."
-      };
+      if (data && data.online) {
+        return data;
+      }
+    } catch (e) {
+      // fallback to direct fetch
     }
+
+    // Direct client fallback
+    const startTime = Date.now();
+    try {
+      const res = await fetch(`${LM_STUDIO_DIRECT_URL}/models`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(6000)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const latency = Date.now() - startTime;
+        const models = data?.data || [];
+        const isLoaded = models.length > 0;
+        const activeModel = isLoaded ? models[0].id : "No Model Loaded in RAM";
+
+        return {
+          online: true,
+          modelLoaded: isLoaded,
+          modelName: activeModel,
+          modelsCount: models.length,
+          latencyMs: latency,
+          lastRequestTime: new Date().toLocaleTimeString(),
+          endpoint: LM_STUDIO_DIRECT_URL,
+          warning: !isLoaded ? "LM Studio server is running, but no AI model is loaded into memory!" : undefined
+        };
+      }
+    } catch (err: any) {
+      // return offline
+    }
+
+    return {
+      online: false,
+      modelLoaded: false,
+      modelName: "Offline",
+      modelsCount: 0,
+      latencyMs: 0,
+      error: `Could not reach LM Studio at ${LM_STUDIO_DIRECT_URL}`
+    };
   }
 
   // Node server check
   const startTime = Date.now();
   try {
-    const response = await axios.get(`${LM_STUDIO_DIRECT_URL}/models`, { timeout: 3000 });
+    const response = await axios.get(`${LM_STUDIO_DIRECT_URL}/models`, { timeout: 6000 });
     const latency = Date.now() - startTime;
     const models = response.data?.data || [];
     const isLoaded = models.length > 0;
@@ -93,7 +130,7 @@ export async function checkLMStudioStatus(): Promise<LMStudioStatus> {
       latencyMs: latency,
       lastRequestTime: new Date().toLocaleTimeString(),
       endpoint: LM_STUDIO_DIRECT_URL,
-      warning: !isLoaded ? "LM Studio server is running, but no AI model is loaded into memory! Please click 'Load Model' in LM Studio." : undefined
+      warning: !isLoaded ? "LM Studio server is running, but no AI model is loaded into memory!" : undefined
     };
   } catch (err: any) {
     return {
@@ -121,23 +158,24 @@ export async function getAICompletion(
   };
 
   if (typeof window !== "undefined") {
-    const res = await fetch("/api/lm-studio", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const res = await fetch("/api/lm-studio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-    const data = await res.json().catch(() => null);
+      const data = await res.json().catch(() => null);
 
-    if (!res.ok || !data || data.error) {
-      const errMsg = data?.error || `LM Studio error (HTTP ${res.status})`;
-      throw new Error(errMsg);
+      if (res.ok && data && !data.error) {
+        return data?.choices?.[0]?.message?.content || "No response text returned from local AI.";
+      }
+    } catch (e) {
+      // fallback to direct client fetch
     }
-
-    return data?.choices?.[0]?.message?.content || "No response text returned from local AI.";
   }
 
-  // Direct Node completion fallback
+  // Direct Node / Client completion fallback
   try {
     const response = await axios.post(`${LM_STUDIO_DIRECT_URL}/chat/completions`, payload, { timeout: 65000 });
     return response.data?.choices?.[0]?.message?.content || "No response text returned from local AI.";

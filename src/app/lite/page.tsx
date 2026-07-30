@@ -195,12 +195,26 @@ export default function LiteWizardPage() {
         {/* STEP 1: PROFILE */}
         {currentStep === 1 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
-            <CardHeader>
-              <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 1 of 5</Badge>
-              <CardTitle className="text-xl">Common App Student Profile</CardTitle>
-              <CardDescription>Enter your details to customize your personal statement concepts.</CardDescription>
+            <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                  Step 1 of 5
+                </Badge>
+                <CardTitle className="text-xl font-extrabold tracking-tight">Common App Student Profile</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Enter your details to customize your personal statement concepts.
+                </CardDescription>
+              </div>
+              <div>
+                <Button
+                  onClick={() => setCurrentStep(2)}
+                  className="h-11 px-8 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm"
+                >
+                  Continue to Story Vault <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground uppercase">Your Name</label>
@@ -230,14 +244,6 @@ export default function LiteWizardPage() {
                   className="h-11 font-medium"
                 />
               </div>
-              <div className="pt-4 flex justify-end">
-                <Button
-                  onClick={() => setCurrentStep(2)}
-                  className="h-11 px-8 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm"
-                >
-                  Continue to Story Vault <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
             </CardContent>
           </Card>
         )}
@@ -245,19 +251,26 @@ export default function LiteWizardPage() {
         {/* STEP 2: STORY VAULT */}
         {currentStep === 2 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 2 of 5</Badge>
-                <CardTitle className="text-xl">Your Saved Stories & Memories</CardTitle>
+            <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                  Step 2 of 5
+                </Badge>
+                <CardTitle className="text-xl font-extrabold tracking-tight">Your Saved Stories & Memories</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Store anecdotes and personal experiences for your Common App essay.
+                </CardDescription>
               </div>
-              <Button
-                onClick={() => setCurrentStep(3)}
-                className="h-10 px-6 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
-              >
-                Next: Generate Essay Ideas <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Button>
+              <div>
+                <Button
+                  onClick={() => setCurrentStep(3)}
+                  className="h-10 px-6 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
+                >
+                  Next: Generate Essay Ideas <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-6 space-y-4">
               {/* Quick Add Story */}
               <div className="p-3.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 space-y-2">
                 <p className="text-xs font-bold text-indigo-500 uppercase">Add Personal Anecdote</p>
@@ -315,12 +328,18 @@ export default function LiteWizardPage() {
         {/* STEP 3: ESSAY IDEAS */}
         {currentStep === 3 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
-            <CardHeader>
-              <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 3 of 5</Badge>
-              <CardTitle className="text-xl">Generate Common App Concepts</CardTitle>
-              <CardDescription>Select a Common App prompt and generate 3 custom essay concepts.</CardDescription>
+            <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                  Step 3 of 5
+                </Badge>
+                <CardTitle className="text-xl font-extrabold tracking-tight">Generate Common App Concepts</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Select a Common App prompt and generate custom essay concepts.
+                </CardDescription>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-6 space-y-4">
               <div className="flex flex-col sm:flex-row items-center gap-3">
                 <select
                   value={selectedPrompt}
@@ -380,10 +399,15 @@ export default function LiteWizardPage() {
         {/* STEP 4: WRITE ESSAY */}
         {currentStep === 4 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 4 of 5</Badge>
-                <CardTitle className="text-xl">Write Personal Statement</CardTitle>
+            <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                  Step 4 of 5
+                </Badge>
+                <CardTitle className="text-xl font-extrabold tracking-tight">Write Personal Statement</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Draft your 650-word Common App essay below.
+                </CardDescription>
               </div>
               <div className="flex items-center gap-3">
                 <Badge
@@ -401,7 +425,7 @@ export default function LiteWizardPage() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-6 space-y-3">
               <Textarea
                 rows={16}
                 value={essayText}
@@ -419,20 +443,27 @@ export default function LiteWizardPage() {
         {/* STEP 5: FEEDBACK */}
         {currentStep === 5 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <Badge className="w-fit mb-1 bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold">Step 5 of 5</Badge>
-                <CardTitle className="text-xl">Admissions Rubric Feedback</CardTitle>
+            <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Badge className="w-fit bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-bold text-[11px] px-2.5 py-0.5">
+                  Step 5 of 5
+                </Badge>
+                <CardTitle className="text-xl font-extrabold tracking-tight">Admissions Rubric Feedback</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Evaluated against Common App admissions standards.
+                </CardDescription>
               </div>
-              <Button
-                onClick={() => setCurrentStep(4)}
-                variant="outline"
-                className="h-9 text-xs font-semibold border-border/40"
-              >
-                <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back to Editor
-              </Button>
+              <div>
+                <Button
+                  onClick={() => setCurrentStep(4)}
+                  variant="outline"
+                  className="h-9 text-xs font-semibold border-border/40"
+                >
+                  <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back to Editor
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="p-4 space-y-4">
+            <CardContent className="p-6 space-y-4">
               {feedbackLoading ? (
                 <div className="py-16 text-center space-y-3">
                   <Loader2 className="h-10 w-10 text-indigo-500 animate-spin mx-auto" />

@@ -73,6 +73,10 @@ export async function getGeminiCompletion(
     process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
     process.env.GEMINI_API_KEY;
 
+  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY") {
+    throw new Error("Google Gemini API key is missing. Click AI Settings ⚙️ in the header to enter your API key!");
+  }
+
   const res = await fetch("/api/gemini", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -181,12 +185,7 @@ export async function getAICompletion(
 
   // Route strictly to Google Gemini API if selected
   if (provider === "gemini") {
-    try {
-      return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
-    } catch (geminiErr: any) {
-      // If Gemini fails, throw error
-      throw geminiErr;
-    }
+    return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
   }
 
   // LM Studio Primary Route
@@ -195,7 +194,7 @@ export async function getAICompletion(
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt }
     ],
-    temperature: 0.7,
+    temperature: 0.8,
     max_tokens: maxTokens
   };
 
@@ -221,10 +220,10 @@ export async function getAICompletion(
   try {
     return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
   } catch (geminiFail: any) {
-    // throw original error
+    // throw helpful exception
   }
 
-  throw new Error("Both Local LM Studio and Google Gemini API are currently unavailable.");
+  throw new Error("AI Engine is offline. Please check LM Studio or click Settings ⚙️ in the header to enter a Gemini API Key.");
 }
 
 export async function conductInterviewStep(
@@ -355,7 +354,7 @@ Respond ONLY with a JSON array:
       }
     }
   } catch (e) {
-    // Dynamic Fallback Matrix tailored specifically to each Common App prompt!
+    // Dynamic Fallback Matrix
   }
 
   // Dynamic Prompt-Aware Fallback Dictionary
@@ -456,33 +455,19 @@ Concept Title: ${ideaTitle || "Reframing the Challenge"}
 Incorporated Anecdotes: ${includeStories ? "YES" : "NO (Generate fresh open narrative)"}
 ${storiesSummary}
 
+Timestamp Seed: ${Date.now()}
+
 Write the complete 450+ word authentic human Common App Personal Statement.`;
 
-  try {
-    const raw = await getAICompletion(userPrompt, systemPrompt, 900);
-    const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
-    
-    if (raw && wordCount >= 250) {
-      return raw.replace(/—|--/g, ", ");
-    }
-  } catch (e) {
-    // If live AI fails, build a rich, personalized 450+ word essay draft using student details
+  // Always attempt live AI completion
+  const raw = await getAICompletion(userPrompt, systemPrompt, 900);
+  const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
+  
+  if (raw && wordCount >= 250) {
+    return raw.replace(/—|--/g, ", ");
   }
 
-  // Rich Dynamic Draft Generator using Student's Actual Profile & Story Vault
-  const firstStory = includeStories && stories && stories.length > 0
-    ? stories[0].content
-    : `working through an unexpected hurdle during a major project in ${major}.`;
-
-  return `Title: ${ideaTitle || "Reframing the Challenge"}
-
-It was late on a Tuesday evening when our main test setup completely stopped responding. My hands were cold from working in the unheated lab room, and my neck was aching from spending four hours straight staring at error logs. We had spent weeks preparing for this run, but standing there looking at a blank status screen, I was genuinely starting to question whether our approach was fundamentally flawed.
-
-Growing up with a drive toward ${major}, I had always imagined that academic breakthrough looked like a clean, linear path. You outline the hypothesis, run the test, get clean data, and move forward. But standing in that quiet lab room, facing ${firstStory}, I realized that real problem-solving is far messier than anything written in a textbook.
-
-Instead of panicking or throwing out the entire project, I took a step back and began breaking down the system into its core pieces. I grabbed a notepad, sat down on a stool, and started tracing every input line by line. I talked through the logic with my teammates, listened to their suggestions, and rebuilt our testing script from scratch. It wasn't the flashy, instantaneous solution I had hoped for, but by midnight, the system executed its first clean cycle.
-
-Looking back on that night as I apply to ${colleges}, I realize it taught me something far more valuable than technical troubleshooting. It taught me how to sit with frustration without backing down. As I prepare to study ${major} in college, I know I will encounter complex problems that don't have straightforward answers. I welcome those challenges, knowing I have the resilience and curiosity to work through the friction and find a way forward.`;
+  throw new Error("AI returned an incomplete response. Please try again!");
 }
 
 export async function analyzeEssayComprehensive(

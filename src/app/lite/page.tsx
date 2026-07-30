@@ -29,7 +29,8 @@ import {
   Mic,
   MicOff,
   Wand2,
-  FileText
+  FileText,
+  AlertCircle
 } from "lucide-react";
 
 export default function LiteWizardPage() {
@@ -56,6 +57,7 @@ export default function LiteWizardPage() {
   const [draftWithoutStories, setDraftWithoutStories] = useState("");
   const [useStoriesOption, setUseStoriesOption] = useState(true);
   const [autoDraftLoading, setAutoDraftLoading] = useState(false);
+  const [aiErrorMsg, setAiErrorMsg] = useState("");
 
   // Active Draft Text in Editor
   const essayText = useStoriesOption ? draftWithStories : draftWithoutStories;
@@ -177,6 +179,7 @@ export default function LiteWizardPage() {
   const handleSelectIdea = async (idea: DetailedEssayIdea) => {
     setSelectedIdeaTitle(idea.title);
     setCurrentStep(4);
+    setAiErrorMsg("");
 
     // Auto-generate draft with stories if empty
     if (!draftWithStories.trim()) {
@@ -186,8 +189,8 @@ export default function LiteWizardPage() {
         setDraftWithStories(draft);
         localStorage.setItem("essayforge_lite_essay_with_stories", draft);
         localStorage.setItem("essayforge_lite_essay", draft);
-      } catch (e) {
-        // Handled in aiService
+      } catch (e: any) {
+        setAiErrorMsg(e.message || "Could not generate essay draft. Please check your AI connection!");
       } finally {
         setAutoDraftLoading(false);
       }
@@ -197,11 +200,13 @@ export default function LiteWizardPage() {
   // Pure Tab Switching (NEVER auto-generates AI on tab click so user has 100% manual control)
   const handleSwitchDraftTab = (withStories: boolean) => {
     setUseStoriesOption(withStories);
+    setAiErrorMsg("");
   };
 
   // Explicit AI Generation / Regeneration Action (Triggered ONLY by clicking "Generate AI Draft")
   const handleGenerateOrRegenerateDraft = async () => {
     setAutoDraftLoading(true);
+    setAiErrorMsg("");
     try {
       const draft = await generateFullEssayDraft(selectedPrompt, profile, vaultStories, selectedIdeaTitle, useStoriesOption);
       if (useStoriesOption) {
@@ -212,8 +217,8 @@ export default function LiteWizardPage() {
         setDraftWithoutStories(draft);
         localStorage.setItem("essayforge_lite_essay_without_stories", draft);
       }
-    } catch (e) {
-      // Handled in aiService
+    } catch (e: any) {
+      setAiErrorMsg(e.message || "AI Engine is offline. Click Settings ⚙️ in top header to add your Google Gemini API key!");
     } finally {
       setAutoDraftLoading(false);
     }
@@ -252,6 +257,7 @@ export default function LiteWizardPage() {
     setIdeas([]);
     setFeedback(null);
     setSelectedIdeaTitle("");
+    setAiErrorMsg("");
     localStorage.removeItem("essayforge_lite_essay");
     localStorage.removeItem("essayforge_lite_essay_with_stories");
     localStorage.removeItem("essayforge_lite_essay_without_stories");
@@ -579,6 +585,13 @@ export default function LiteWizardPage() {
             </CardHeader>
 
             <CardContent className="p-6 space-y-4">
+              {aiErrorMsg && (
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                  <span>{aiErrorMsg}</span>
+                </div>
+              )}
+
               {/* Pure Tab Mode Switcher */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 rounded-2xl bg-secondary/50 border border-border/40 gap-2">
                 <span className="text-xs font-bold text-muted-foreground px-2">Workspace Mode:</span>

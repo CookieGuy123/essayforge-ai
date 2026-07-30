@@ -51,7 +51,7 @@ export default function LiteWizardPage() {
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [selectedIdeaTitle, setSelectedIdeaTitle] = useState("");
 
-  // Step 4 State: Cached Dual Draft States (Persisted in LocalStorage)
+  // Step 4 State: Dual Independent Draft Workspaces
   const [draftWithStories, setDraftWithStories] = useState("");
   const [draftWithoutStories, setDraftWithoutStories] = useState("");
   const [useStoriesOption, setUseStoriesOption] = useState(true);
@@ -194,35 +194,13 @@ export default function LiteWizardPage() {
     }
   };
 
-  // Instant Tab Switching with Persistent LocalStorage Dual Drafts
-  const handleSwitchDraftTab = async (withStories: boolean) => {
+  // Pure Tab Switching (NEVER auto-generates AI on tab click so user has 100% manual control)
+  const handleSwitchDraftTab = (withStories: boolean) => {
     setUseStoriesOption(withStories);
-
-    const targetDraft = withStories ? draftWithStories : draftWithoutStories;
-
-    // If target draft is empty, generate it for the FIRST time only
-    if (!targetDraft.trim()) {
-      setAutoDraftLoading(true);
-      try {
-        const draft = await generateFullEssayDraft(selectedPrompt, profile, vaultStories, selectedIdeaTitle, withStories);
-        if (withStories) {
-          setDraftWithStories(draft);
-          localStorage.setItem("essayforge_lite_essay_with_stories", draft);
-          localStorage.setItem("essayforge_lite_essay", draft);
-        } else {
-          setDraftWithoutStories(draft);
-          localStorage.setItem("essayforge_lite_essay_without_stories", draft);
-        }
-      } catch (e) {
-        // Fallback
-      } finally {
-        setAutoDraftLoading(false);
-      }
-    }
   };
 
-  // Explicit Regenerate Draft Action
-  const handleRegenerateActiveDraft = async () => {
+  // Explicit AI Generation / Regeneration Action (Triggered ONLY by clicking "Generate AI Draft")
+  const handleGenerateOrRegenerateDraft = async () => {
     setAutoDraftLoading(true);
     try {
       const draft = await generateFullEssayDraft(selectedPrompt, profile, vaultStories, selectedIdeaTitle, useStoriesOption);
@@ -568,7 +546,7 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 4: WRITE COLLEGE ESSAY (PERMANENT DUAL LOCALSTORAGE CACHED DRAFT MODE) */}
+        {/* STEP 4: WRITE COLLEGE ESSAY (100% MANUAL CONTROL - NO AUTO GENERATION ON TAB CLICK) */}
         {currentStep === 4 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -578,7 +556,7 @@ export default function LiteWizardPage() {
                 </Badge>
                 <CardTitle className="text-xl font-extrabold tracking-tight">Write College Essay</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground">
-                  Switch instantly between your Story Vault draft and a fresh open narrative!
+                  Switch freely between your Story Vault draft workspace and a fresh open narrative workspace!
                 </CardDescription>
               </div>
 
@@ -601,12 +579,11 @@ export default function LiteWizardPage() {
             </CardHeader>
 
             <CardContent className="p-6 space-y-4">
-              {/* Instant Tab Selector */}
+              {/* Pure Tab Mode Switcher */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 rounded-2xl bg-secondary/50 border border-border/40 gap-2">
-                <span className="text-xs font-bold text-muted-foreground px-2">Draft Mode:</span>
+                <span className="text-xs font-bold text-muted-foreground px-2">Workspace Mode:</span>
                 <div className="flex items-center gap-2">
                   <button
-                    disabled={autoDraftLoading}
                     onClick={() => handleSwitchDraftTab(true)}
                     className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                       useStoriesOption
@@ -615,11 +592,10 @@ export default function LiteWizardPage() {
                     }`}
                   >
                     <Wand2 className="h-3.5 w-3.5" />
-                    With Story Vault ✨ {draftWithStories.trim() && "(Saved)"}
+                    With Story Vault ✨ {draftWithStories.trim() ? "(Saved)" : "(Empty)"}
                   </button>
 
                   <button
-                    disabled={autoDraftLoading}
                     onClick={() => handleSwitchDraftTab(false)}
                     className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                       !useStoriesOption
@@ -628,7 +604,7 @@ export default function LiteWizardPage() {
                     }`}
                   >
                     <FileText className="h-3.5 w-3.5" />
-                    Without Stories (Fresh Narrative) ✍️ {draftWithoutStories.trim() && "(Saved)"}
+                    Without Stories (Fresh Narrative) ✍️ {draftWithoutStories.trim() ? "(Saved)" : "(Empty)"}
                   </button>
                 </div>
               </div>
@@ -637,7 +613,7 @@ export default function LiteWizardPage() {
                 <div className="py-20 text-center space-y-3 bg-secondary/30 rounded-2xl border border-dashed border-orange-500/30">
                   <Loader2 className="h-10 w-10 text-orange-500 animate-spin mx-auto" />
                   <p className="text-sm font-bold text-foreground">
-                    {useStoriesOption ? "Drafting Common App essay with your Story Vault anecdotes..." : "Drafting fresh open narrative Common App essay..."}
+                    {useStoriesOption ? "Generating Common App essay with your Story Vault anecdotes..." : "Generating fresh open narrative Common App essay..."}
                   </p>
                   <p className="text-xs text-muted-foreground">Writing in an authentic, conversational high school senior voice (zero AI clichés & zero em dashes).</p>
                 </div>
@@ -647,7 +623,11 @@ export default function LiteWizardPage() {
                     rows={16}
                     value={essayText}
                     onChange={(e) => handleUpdateEssayText(e.target.value)}
-                    placeholder="Write or edit your Common App college essay draft here... (Target limit: 650 words)"
+                    placeholder={
+                      useStoriesOption
+                        ? "Write, paste, or click 'Generate AI Draft ✨' to create an essay using your Story Vault anecdotes..."
+                        : "Write, paste, or click 'Generate AI Draft ✨' to create a fresh open narrative essay..."
+                    }
                     className="text-sm leading-relaxed"
                   />
 
@@ -665,10 +645,11 @@ export default function LiteWizardPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleRegenerateActiveDraft}
+                        onClick={handleGenerateOrRegenerateDraft}
                         className="text-xs font-bold text-orange-600 dark:text-orange-400 border-orange-500/30 hover:bg-orange-500/10 whitespace-nowrap shrink-0"
                       >
-                        <Wand2 className="mr-1.5 h-3.5 w-3.5 text-orange-500" /> Regenerate Draft
+                        <Wand2 className="mr-1.5 h-3.5 w-3.5 text-orange-500" />
+                        {essayText.trim() ? "Regenerate AI Draft ✨" : "Generate AI Draft ✨"}
                       </Button>
                     </div>
                   </div>

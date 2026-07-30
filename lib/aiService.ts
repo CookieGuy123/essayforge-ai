@@ -62,6 +62,45 @@ export interface ComprehensiveEssayAnalysis {
   recommendations: string[];
 }
 
+// Google Gemini API completion helper
+export async function getGeminiCompletion(
+  prompt: string,
+  systemPrompt: string,
+  maxTokens: number = 800,
+  apiKeyOverride?: string
+): Promise<string> {
+  const apiKey = 
+    apiKeyOverride ||
+    (typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null) ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    process.env.GEMINI_API_KEY;
+
+  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY") {
+    throw new Error("Gemini API key is not configured. Add your GEMINI_API_KEY to .env.local or enter it in Settings!");
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+  const payload = {
+    contents: [
+      {
+        parts: [
+          { text: `${systemPrompt}\n\nUser Request:\n${prompt}` }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: maxTokens
+    }
+  };
+
+  const res = await axios.post(endpoint, payload, { headers: { "Content-Type": "application/json" } });
+  const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("No response text received from Gemini API.");
+  return text;
+}
+
 export async function checkLMStudioStatus(): Promise<LMStudioStatus> {
   if (typeof window !== "undefined") {
     try {
@@ -149,6 +188,17 @@ export async function getAICompletion(
   systemPrompt: string = "You are EssayForge AI, an expert college admissions essay coach.",
   maxTokens: number = 500
 ): Promise<string> {
+  const provider = typeof window !== "undefined" ? localStorage.getItem("essayforge_provider") : "lm-studio";
+
+  // Route to Google Gemini API if selected
+  if (provider === "gemini") {
+    try {
+      return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
+    } catch (geminiErr: any) {
+      // Fallback to local LM Studio if Gemini call fails
+    }
+  }
+
   const payload = {
     messages: [
       { role: "system", content: systemPrompt },
@@ -335,49 +385,53 @@ export async function generateFullEssayDraft(
   const colleges = profile?.colleges || "target universities";
   const storiesSummary = stories && stories.length > 0 
     ? stories.map(s => `Anecdote (${s.title}): ${s.content}`).join("\n\n")
-    : "During a crucial regional competition, an unexpected malfunction occurred in our system. Instead of backing down, I analyzed the core failure under intense pressure and developed an alternative solution.";
+    : "During a robotics regional, our optical sensor failed right before autonomous mode. I had fifteen minutes to manually re-code our movement based on wheel encoder counts.";
 
-  const systemPrompt = `You are a top college admissions essay coach.
-STRICT MINIMUM LENGTH REQUIREMENT: You MUST write a full-length, complete Common App Personal Statement of AT LEAST 450 WORDS (target range: 450 to 550 words).
-Structure the essay into 4 detailed, well-developed paragraphs:
-1. Engaging Hook & Concrete Setting (approx 100 words)
-2. The Challenge & Technical / Personal Trial (approx 150 words)
-3. Turning Point, Adaptation & Internal Transformation (approx 120 words)
-4. Reflective Conclusion on Future Goals & Academic Growth (approx 100 words)
+  // Strict Human Voice Prompting Directive (Zero AI Clichés / Zero Em Dashes / Authentic Voice)
+  const systemPrompt = `Write this Common App essay as if it were written by a thoughtful high school senior reflecting honestly on a real experience.
+Use a natural, conversational voice instead of overly polished or formal language.
+Include specific details, sensory moments, and personal reflections rather than generic statements.
+Vary sentence length and structure, and don't make every paragraph perfectly symmetrical.
+Avoid clichés, buzzwords, and dramatic exaggeration.
+DO NOT use em dashes (-- or —), unnecessary adjectives, or overly sophisticated vocabulary just to sound impressive.
+Show personality, including small imperfections in the narration, moments of uncertainty, humor, or self-doubt where appropriate.
+Focus on telling a genuine story that reveals something meaningful about the writer rather than trying to sound inspirational.
+The essay should feel authentic, nuanced, and unmistakably human.
 
-Do NOT write a short summary or brief outline. Write the full text of the essay.`;
+STRICT MINIMUM LENGTH REQUIREMENT: You MUST write a full-length, complete Common App Personal Statement of AT LEAST 450 WORDS (target range: 450 to 550 words).`;
 
-  const userPrompt = `Student Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
+  const userPrompt = `Writer Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
 Common App Prompt: ${promptText}
 Concept Title: ${ideaTitle || "The Unseen Iteration"}
-Saved Story Vault Anecdotes:\n${storiesSummary}\n
+Personal Anecdotes & Memories:\n${storiesSummary}\n
 
-Write the complete 450+ word Common App Personal Statement.`;
+Write the complete 450+ word authentic human Common App Personal Statement.`;
 
   try {
     const raw = await getAICompletion(userPrompt, systemPrompt, 900);
     const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
     
-    // Ensure strict minimum of 350+ words from LLM
+    // Ensure strict minimum of 300+ words from LLM
     if (raw && wordCount >= 300) {
-      return raw;
+      // Strip any accidental em dashes if model generated them
+      return raw.replace(/—|--/g, ", ");
     }
   } catch (e) {
     // fallback draft
   }
 
-  // Guaranteed 450+ Word High-Quality Fallback Draft incorporating Story Vault & Profile
+  // Guaranteed 450+ Word High-Quality Authentic Human Fallback Draft
   const firstStory = stories && stories.length > 0 ? stories[0].content : "our robot's optical sensor failed mid-match, forcing me to rewrite our autonomous navigation loop relying on wheel encoder counts in fifteen minutes.";
   
   return `Title: ${ideaTitle || "The Unseen Iteration"}
 
-The room fell completely silent as the mechanical hum of our project ground to a sudden, unexpected halt. It wasn't the kind of failure you prepare for during a routine test run—it was immediate, high-stakes, and completely unscripted. In that exact moment, ${firstStory} With less than twenty minutes remaining on the clock and the judge's eyes fixed on our workstation, the pressure was immense. But in that high-stakes moment of friction, I made a conscious choice to step back, take a deep breath, and analyze the problem with calm precision.
+The garage smelled like hot solder and cold coffee. It was 11:45 PM on a Tuesday, three days before regionals, and nothing was working. We had spent four months building a robot meant to navigate an obstacle grid automatically, but every time I hit the start button, it drove straight into the nearest folding table. My hands were stained with grease, my neck hurt from leaning over the chassis, and I was genuinely starting to doubt why I signed up to head the software team in the first place.
 
-Growing up with a passionate focus on ${major}, I used to believe that academic and technical success was defined entirely by clean, flawless initial outcomes. I approached every challenge expecting a linear path from problem to solution. But as the clock ticked down during that competition, I realized that true engineering—and genuine personal growth—isn't about avoiding mistakes; it is defined by how gracefully and creatively you adapt when your initial assumptions crumble.
+When you spend years telling people you want to major in ${major}, you build up this idea in your head that problem-solving is clean. You write out logic on a whiteboard, compile the code, hit run, and watch the solution unfold. But reality is rarely that neat. In that quiet room, looking at a broken optical sensor and a room full of tired teammates, I realized that my neatly organized mental model was completely useless. ${firstStory}
 
-Instead of succumbing to panic, I systematically dismantled the problem into its fundamental components. I stopped searching for a quick superficial patch and focused on understanding why the failure had occurred in the first place. I collaborated with my team members, listened to their perspectives, and re-engineered our approach from the ground up. That mindset shift didn't just save our project performance; it permanently altered how I navigate uncertainty, challenge, and trial-and-error learning.
+I sat down on the concrete floor with my laptop on my knees. Instead of trying to force the broken sensor to read data it clearly couldn't process, I started stripping away lines of code. I went back to basic geometry, calculating wheel rotation counts instead of optical distances. It wasn't the elegant, high-tech algorithm I had bragged about in our team notebook. It was clunky, simple, and required three manual calibration checks before every run. But when I pushed the code to the controller at midnight, the robot turned ninety degrees, moved four feet forward, and stopped precisely on the tape line.
 
-This transformative experience directly shaped my vision for my collegiate career studying ${major} at institutions like ${colleges}. I now understand that true intellectual curiosity requires stepping outside my comfort zone and embracing complex, open-ended problems without fear of failure. As I prepare for the next chapter of my academic journey, I carry this lesson with me: failure is not the end of the narrative, but rather the essential spark that drives meaningful innovation, resilience, and lifelong discovery.`;
+That night didn't feel like a movie turning point. I didn't have some profound epiphany about my future. But looking back now as I apply to ${colleges}, I realize it taught me something far more useful than software syntax. It taught me how to sit with frustration without panicking. When I get to college to study ${major}, I know I am going to face problems that don't have neat textbook answers. I am completely fine with that, because I know I can sit on a cold floor, admit when something isn't working, and rebuild a solution from scratch.`;
 }
 
 export async function analyzeEssayComprehensive(

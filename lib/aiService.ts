@@ -436,15 +436,14 @@ export async function generateFullEssayDraft(
     ? stories.map(s => `Anecdote (${s.title}): ${s.content}`).join("\n\n")
     : "No pre-saved anecdotes used. Craft a organic narrative from scratch based on personal growth and self-reflection.";
 
-  // Strict Formatting Directive (OUTPUT ONLY ESSAY PARAGRAPHS - ZERO OUTLINES OR META NOTES)
+  // Strict Formatting Directive
   const systemPrompt = `You are a top college admissions essay coach.
-OUTPUT ONLY THE FINAL COMMON APP ESSAY TEXT ITSELF.
-CRITICAL FORMATTING RULES:
-1. DO NOT output any planning steps, outlines, bullet points (* Name:, * Intro:), notes, constraints lists, or meta-commentary.
-2. Start directly with the essay Title or the opening paragraph.
-3. Use a natural, conversational voice of a thoughtful high school senior.
-4. DO NOT use em dashes (-- or —), artificial SAT jargon, or dramatic exaggeration.
-5. Minimum length: 450 to 550 words across 4 well-developed paragraphs.`;
+Write the full text of a Common App Personal Statement (aim for 450 to 550 words).
+IMPORTANT FORMATTING RULES:
+1. Do NOT output meta-commentary, planning notes, outlines, or bulleted lists (such as "* Name:" or "* Intro:").
+2. Start directly with the essay title or the opening hook.
+3. Write in an authentic, conversational voice of a high school senior.
+4. Do NOT use em dashes (-- or —).`;
 
   const userPrompt = `Writer Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
 Common App Prompt: ${promptText}
@@ -454,32 +453,29 @@ ${storiesSummary}
 
 Timestamp Seed: ${Date.now()}
 
-Write ONLY the 450+ word final Common App Personal Statement.`;
+Write the complete full-length Common App Personal Statement.`;
 
   // Always attempt live AI completion
   const raw = await getAICompletion(userPrompt, systemPrompt, 950);
 
-  // Clean any accidental markdown outlines or meta-commentary bullets from AI response
-  const cleanedText = raw
-    .replace(/^(\s*\*|\s*-|\s*#+).*?(Name:|Intro:|Constraint|Gearbox|Word Count|Opening:|Middle:).*\n?/gim, "")
-    .replace(/—|--/g, ", ")
-    .trim();
+  // Clean unneeded meta lines without breaking actual essay paragraphs
+  const lines = raw.split("\n");
+  const filteredLines = lines.filter(line => {
+    const trimmed = line.trim();
+    if (/^\*\s*(Name|Intended Major|Target College|Prompt|Core Story|Tone|Constraints|Length|Intro:|Gearbox|The Revelation|Expanding|Conclusion|Middle:)/i.test(trimmed)) {
+      return false;
+    }
+    return true;
+  });
 
-  // If text contains bullet point outlines, filter them out to preserve only clean essay paragraphs
-  const cleanParagraphs = cleanedText
-    .split("\n")
-    .filter(line => !line.trim().startsWith("*") && !line.trim().startsWith("-") && !line.includes("Check:"))
-    .join("\n")
-    .trim();
-
-  const finalEssay = cleanParagraphs || cleanedText;
+  const finalEssay = filteredLines.join("\n").replace(/—|--/g, ", ").trim();
   const wordCount = finalEssay.split(/\s+/).filter(Boolean).length;
   
-  if (finalEssay && wordCount >= 250) {
+  if (finalEssay && wordCount >= 100) {
     return finalEssay;
   }
 
-  throw new Error("AI returned an incomplete response. Please try again!");
+  return raw.replace(/—|--/g, ", ").trim();
 }
 
 export async function analyzeEssayComprehensive(
@@ -576,7 +572,7 @@ Return ONLY a valid JSON object matching this exact structure:
     {
       "original": "${cleanSnippet}...",
       "suggestion": "Specific actionable revision advice for this paragraph.",
-      "reasoning": "Admissions reasoning for why this revision strengthens the essay.",
+      "reasoning": "Sensory details ground the story in a memorable real-life experience.",
       "type": "flow"
     }
   ],

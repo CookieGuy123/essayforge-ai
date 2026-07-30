@@ -66,7 +66,7 @@ export interface ComprehensiveEssayAnalysis {
 export async function getGeminiCompletion(
   prompt: string,
   systemPrompt: string,
-  maxTokens: number = 950
+  maxTokens: number = 2000
 ): Promise<string> {
   const apiKey = 
     (typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null) ||
@@ -421,45 +421,48 @@ Respond ONLY with a JSON array:
   ];
 }
 
-// Clean & extract pure essay paragraphs from raw AI responses (removing internal thinking notes/outlines)
-export function extractEssayBodyText(raw: string, title?: string): string {
-  const lines = raw.split("\n");
-  const validParagraphs: string[] = [];
+// Clean & extract pure essay prose paragraphs from raw AI outputs
+export function extractPureEssayText(raw: string, title?: string): string {
+  const paragraphs = raw.split(/\n\s*\n/);
+  const essayParagraphs: string[] = [];
 
-  for (const line of lines) {
-    const trimmed = line.trim();
+  for (const p of paragraphs) {
+    const trimmed = p.trim();
     if (!trimmed) continue;
 
-    // Discard metadata scratchpad lines (e.g. "* Role:", "* Writer:", "* Goal:", "* Constraint 1:", "* Voice Check:")
-    if (/^\*\s*(Role|Goal|Writer|Major|Target|Concept|Anecdote|Constraint|Voice Check|Constraint Check)/i.test(trimmed)) {
+    // Skip outline blocks (metadata lists or numbered outline planning steps)
+    if (/^(\*|\d+\.|\#)\s*(Role|Goal|Writer|Major|Target|Concept|Anecdote|Constraint|Voice Check|Constraint Check|Intro|Body Paragraph|Conclusion|Gearbox|The Turning Point|Expansion)/i.test(trimmed)) {
       continue;
     }
 
-    // Discard outline headers (e.g. "* Hook:", "* Intro:", "* Body Paragraph")
-    if (/^\*\s*\*?(Hook|Intro|Body Paragraph|Conclusion|Gearbox Details|Engine|Refining|Opening|Middle|Constraint Check)\*?:?\s*$/i.test(trimmed)) {
-      continue;
+    // Skip short bullet items or list metadata
+    if (trimmed.startsWith("*") || trimmed.startsWith("-") || trimmed.startsWith("1.") || trimmed.startsWith("2.")) {
+      // If paragraph contains a colon near start and is short, it's outline notes
+      if (/^[\*\d\.\-\s]+[A-Z\s/]+:[\s\S]{0,100}$/i.test(trimmed)) {
+        continue;
+      }
     }
 
-    // If paragraph has inline label prefix (e.g. "* *Intro/Gearbox:* I spent three days..."), strip off prefix
-    let cleanLine = trimmed
-      .replace(/^\s*\*\s*\*?[A-Z0-9\s/_\-()]+:\*?\s*/i, "")
-      .replace(/^[\*\-\#]+\s*/, "")
+    // Strip inline section prefixes if model added them (e.g. "* *Intro/Gearbox:* The workshop was...")
+    let cleanProse = trimmed
+      .replace(/^[\*\s\-\d\.]+\*?[A-Z0-9\s/_\-()]+\*?:\s*/i, "")
       .replace(/—|--/g, ", ")
       .trim();
 
-    if (cleanLine.length > 20) {
-      validParagraphs.push(cleanLine);
+    // Valid essay paragraphs have at least 120 characters and multiple words
+    if (cleanProse.length > 80 && cleanProse.split(/\s+/).length > 15) {
+      essayParagraphs.push(cleanProse);
     }
   }
 
-  const result = validParagraphs.join("\n\n").trim();
-  if (result && result.split(/\s+/).length >= 100) {
-    return title ? `Title: ${title}\n\n${result}` : result;
+  if (essayParagraphs.length > 0) {
+    const fullProse = essayParagraphs.join("\n\n").trim();
+    return title ? `Title: ${title}\n\n${fullProse}` : fullProse;
   }
 
-  // Fallback to basic string cleaning if custom parsing finds nothing
+  // Fallback to basic regex cleaner
   return raw
-    .replace(/^\s*\*.*?\n/gm, "")
+    .replace(/^(\*|\d+\.).*?\n/gm, "")
     .replace(/—|--/g, ", ")
     .trim();
 }
@@ -477,13 +480,13 @@ export async function generateFullEssayDraft(
   
   const storiesSummary = includeStories && stories && stories.length > 0 
     ? stories.map(s => `Anecdote (${s.title}): ${s.content}`).join("\n\n")
-    : "No pre-saved anecdotes used. Craft a organic narrative from scratch based on personal growth and self-reflection.";
+    : "No pre-saved anecdotes used. Craft an organic narrative from scratch based on personal growth and self-reflection.";
 
-  // Strict Formatting Directive
-  const systemPrompt = `You are an expert college admissions essay writer.
-Write a full 450 to 550 word Common App Personal Statement for high school senior ${name} applying for ${major} at ${colleges}.
-STRICT OUTPUT INSTRUCTION: Output ONLY the 4 paragraphs of the essay text itself.
-DO NOT include planning notes, bullet point lists (* Role:, * Goal:), outline headers (* Intro:), or meta-commentary.
+  // Strict System Prompt (DO NOT THINK ALOUD - DO NOT WRITE OUTLINES)
+  const systemPrompt = `You are a top college admissions essay writer.
+DO NOT WRITE AN OUTLINE. DO NOT WRITE PLANNING NOTES. DO NOT WRITE BULLET POINTS.
+WRITE ONLY THE FINAL ESSAY PARAGRAPHS FOR THE STUDENT.
+The essay must be 450 to 550 words long across 4 full paragraphs.
 Do NOT use em dashes (-- or —).`;
 
   const userPrompt = `Student Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
@@ -493,13 +496,13 @@ Saved Stories:\n${storiesSummary}
 
 Timestamp Seed: ${Date.now()}
 
-Write ONLY the final 450+ word essay paragraphs.`;
+Write ONLY the final 450+ word Common App Personal Statement paragraphs immediately.`;
 
-  // Always attempt live AI completion
-  const raw = await getAICompletion(userPrompt, systemPrompt, 950);
+  // Always attempt live AI completion with 2000 token headroom to prevent mid-sentence cutoff!
+  const raw = await getAICompletion(userPrompt, systemPrompt, 2000);
 
-  // Extract clean essay paragraphs using robust parser
-  const cleanEssay = extractEssayBodyText(raw, ideaTitle);
+  // Extract pure essay prose using extractPureEssayText
+  const cleanEssay = extractPureEssayText(raw, ideaTitle);
   const wordCount = cleanEssay.split(/\s+/).filter(Boolean).length;
   
   if (cleanEssay && wordCount >= 100) {

@@ -70,7 +70,6 @@ export default function LiteWizardPage() {
 
   // Active Feedback Object
   const currentFeedback = activeFeedbackTab === "with" ? feedbackWithStories : feedbackWithoutStories;
-  const currentFeedbackDraftText = activeFeedbackTab === "with" ? draftWithStories : draftWithoutStories;
 
   // Initialize from LocalStorage
   useEffect(() => {
@@ -241,21 +240,32 @@ export default function LiteWizardPage() {
     }
   };
 
-  // Feedback Generator (Analyzes both With Story Vault & Without Stories drafts)
+  // Fast Parallel Feedback Generator (Promise.all executes both evaluations concurrently)
   const handleRunFeedback = async () => {
     setFeedbackLoading(true);
     setCurrentStep(5);
     setActiveFeedbackTab(useStoriesOption ? "with" : "without");
 
     try {
+      const promises: Promise<void>[] = [];
+
       if (draftWithStories.trim()) {
-        const resWith = await analyzeEssayComprehensive(draftWithStories, selectedPrompt, profile);
-        setFeedbackWithStories(resWith);
+        promises.push(
+          analyzeEssayComprehensive(draftWithStories, selectedPrompt, profile)
+            .then(res => setFeedbackWithStories(res))
+            .catch(() => {})
+        );
       }
+
       if (draftWithoutStories.trim()) {
-        const resWithout = await analyzeEssayComprehensive(draftWithoutStories, selectedPrompt, profile);
-        setFeedbackWithoutStories(resWithout);
+        promises.push(
+          analyzeEssayComprehensive(draftWithoutStories, selectedPrompt, profile)
+            .then(res => setFeedbackWithoutStories(res))
+            .catch(() => {})
+        );
       }
+
+      await Promise.all(promises);
     } catch (e) {
       // Fallback
     } finally {
@@ -750,7 +760,8 @@ export default function LiteWizardPage() {
               {feedbackLoading ? (
                 <div className="py-16 text-center space-y-3">
                   <Loader2 className="h-10 w-10 text-orange-500 animate-spin mx-auto" />
-                  <p className="text-sm font-bold text-foreground">Evaluating your Common App essays against admissions rubrics...</p>
+                  <p className="text-sm font-bold text-foreground">Evaluating both Common App essays in parallel...</p>
+                  <p className="text-xs text-muted-foreground">Evaluating voice authenticity, reflection depth, and admissions fit.</p>
                 </div>
               ) : currentFeedback ? (
                 <div className="space-y-4">

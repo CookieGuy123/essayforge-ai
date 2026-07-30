@@ -66,7 +66,7 @@ export interface ComprehensiveEssayAnalysis {
 export async function getGeminiCompletion(
   prompt: string,
   systemPrompt: string,
-  maxTokens: number = 900
+  maxTokens: number = 950
 ): Promise<string> {
   const apiKey = 
     (typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null) ||
@@ -421,6 +421,49 @@ Respond ONLY with a JSON array:
   ];
 }
 
+// Clean & extract pure essay paragraphs from raw AI responses (removing internal thinking notes/outlines)
+export function extractEssayBodyText(raw: string, title?: string): string {
+  const lines = raw.split("\n");
+  const validParagraphs: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Discard metadata scratchpad lines (e.g. "* Role:", "* Writer:", "* Goal:", "* Constraint 1:", "* Voice Check:")
+    if (/^\*\s*(Role|Goal|Writer|Major|Target|Concept|Anecdote|Constraint|Voice Check|Constraint Check)/i.test(trimmed)) {
+      continue;
+    }
+
+    // Discard outline headers (e.g. "* Hook:", "* Intro:", "* Body Paragraph")
+    if (/^\*\s*\*?(Hook|Intro|Body Paragraph|Conclusion|Gearbox Details|Engine|Refining|Opening|Middle|Constraint Check)\*?:?\s*$/i.test(trimmed)) {
+      continue;
+    }
+
+    // If paragraph has inline label prefix (e.g. "* *Intro/Gearbox:* I spent three days..."), strip off prefix
+    let cleanLine = trimmed
+      .replace(/^\s*\*\s*\*?[A-Z0-9\s/_\-()]+:\*?\s*/i, "")
+      .replace(/^[\*\-\#]+\s*/, "")
+      .replace(/—|--/g, ", ")
+      .trim();
+
+    if (cleanLine.length > 20) {
+      validParagraphs.push(cleanLine);
+    }
+  }
+
+  const result = validParagraphs.join("\n\n").trim();
+  if (result && result.split(/\s+/).length >= 100) {
+    return title ? `Title: ${title}\n\n${result}` : result;
+  }
+
+  // Fallback to basic string cleaning if custom parsing finds nothing
+  return raw
+    .replace(/^\s*\*.*?\n/gm, "")
+    .replace(/—|--/g, ", ")
+    .trim();
+}
+
 export async function generateFullEssayDraft(
   promptText: string,
   profile?: any,
@@ -437,42 +480,30 @@ export async function generateFullEssayDraft(
     : "No pre-saved anecdotes used. Craft a organic narrative from scratch based on personal growth and self-reflection.";
 
   // Strict Formatting Directive
-  const systemPrompt = `You are a top college admissions essay coach.
-Write the full text of a Common App Personal Statement (aim for 450 to 550 words).
-IMPORTANT FORMATTING RULES:
-1. Do NOT output meta-commentary, planning notes, outlines, or bulleted lists (such as "* Name:" or "* Intro:").
-2. Start directly with the essay title or the opening hook.
-3. Write in an authentic, conversational voice of a high school senior.
-4. Do NOT use em dashes (-- or —).`;
+  const systemPrompt = `You are an expert college admissions essay writer.
+Write a full 450 to 550 word Common App Personal Statement for high school senior ${name} applying for ${major} at ${colleges}.
+STRICT OUTPUT INSTRUCTION: Output ONLY the 4 paragraphs of the essay text itself.
+DO NOT include planning notes, bullet point lists (* Role:, * Goal:), outline headers (* Intro:), or meta-commentary.
+Do NOT use em dashes (-- or —).`;
 
-  const userPrompt = `Writer Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
+  const userPrompt = `Student Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
 Common App Prompt: ${promptText}
 Concept Title: ${ideaTitle || "Reframing the Challenge"}
-Incorporated Anecdotes: ${includeStories ? "YES" : "NO"}
-${storiesSummary}
+Saved Stories:\n${storiesSummary}
 
 Timestamp Seed: ${Date.now()}
 
-Write the complete full-length Common App Personal Statement.`;
+Write ONLY the final 450+ word essay paragraphs.`;
 
   // Always attempt live AI completion
   const raw = await getAICompletion(userPrompt, systemPrompt, 950);
 
-  // Clean unneeded meta lines without breaking actual essay paragraphs
-  const lines = raw.split("\n");
-  const filteredLines = lines.filter(line => {
-    const trimmed = line.trim();
-    if (/^\*\s*(Name|Intended Major|Target College|Prompt|Core Story|Tone|Constraints|Length|Intro:|Gearbox|The Revelation|Expanding|Conclusion|Middle:)/i.test(trimmed)) {
-      return false;
-    }
-    return true;
-  });
-
-  const finalEssay = filteredLines.join("\n").replace(/—|--/g, ", ").trim();
-  const wordCount = finalEssay.split(/\s+/).filter(Boolean).length;
+  // Extract clean essay paragraphs using robust parser
+  const cleanEssay = extractEssayBodyText(raw, ideaTitle);
+  const wordCount = cleanEssay.split(/\s+/).filter(Boolean).length;
   
-  if (finalEssay && wordCount >= 100) {
-    return finalEssay;
+  if (cleanEssay && wordCount >= 100) {
+    return cleanEssay;
   }
 
   return raw.replace(/—|--/g, ", ").trim();
@@ -571,7 +602,7 @@ Return ONLY a valid JSON object matching this exact structure:
   "lineFeedback": [
     {
       "original": "${cleanSnippet}...",
-      "suggestion": "Specific actionable revision advice for this paragraph.",
+      "suggestion": "Sensory details ground the story in a memorable real-life experience.",
       "reasoning": "Sensory details ground the story in a memorable real-life experience.",
       "type": "flow"
     }

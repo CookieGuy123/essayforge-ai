@@ -281,10 +281,10 @@ export default function LiteWizardPage() {
                   Enter your details to customize your personal statement concepts.
                 </CardDescription>
               </div>
-              <div>
+              <div className="shrink-0">
                 <Button
                   onClick={() => setCurrentStep(2)}
-                  className="h-11 px-8 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl text-sm shadow-md shadow-orange-500/20"
+                  className="h-11 px-8 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl text-sm shadow-md shadow-orange-500/20 whitespace-nowrap"
                 >
                   Continue to Story Vault <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -324,7 +324,7 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 2: STORY VAULT (WITH VOICE-TO-TEXT DICTATION) */}
+        {/* STEP 2: STORY VAULT */}
         {currentStep === 2 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -337,10 +337,10 @@ export default function LiteWizardPage() {
                   Store anecdotes and personal experiences for your Common App essay.
                 </CardDescription>
               </div>
-              <div>
+              <div className="shrink-0">
                 <Button
                   onClick={() => setCurrentStep(3)}
-                  className="h-10 px-6 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md shadow-orange-500/20"
+                  className="h-10 px-6 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md shadow-orange-500/20 whitespace-nowrap"
                 >
                   Next: Generate Essay Ideas <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
@@ -349,7 +349,7 @@ export default function LiteWizardPage() {
             <CardContent className="p-6 space-y-4">
               {/* Add Story with Voice Dictation */}
               <div className="p-4 rounded-2xl border border-orange-500/20 bg-orange-500/5 space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-bold text-orange-500 uppercase">Add Personal Anecdote</p>
                   
                   {/* Voice-to-Text Dictation Button */}
@@ -358,7 +358,7 @@ export default function LiteWizardPage() {
                     size="sm"
                     variant={isRecording ? "destructive" : "outline"}
                     onClick={handleToggleVoiceDictation}
-                    className={`h-8 text-xs font-bold transition-all ${
+                    className={`h-8 text-xs font-bold whitespace-nowrap transition-all ${
                       isRecording ? "animate-pulse shadow-md" : "border-orange-500/30 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
                     }`}
                   >
@@ -402,7 +402,7 @@ export default function LiteWizardPage() {
                   className="text-xs leading-relaxed"
                 />
                 <div className="flex justify-end">
-                  <Button size="sm" onClick={handleAddVaultEntry} className="h-9 px-5 text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl shadow-xs">
+                  <Button size="sm" onClick={handleAddVaultEntry} className="h-9 px-5 text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl shadow-xs whitespace-nowrap">
                     Save to Vault
                   </Button>
                 </div>
@@ -427,7 +427,7 @@ export default function LiteWizardPage() {
                           setVaultStories(updated);
                           localStorage.setItem("essayforge_lite_stories", JSON.stringify(updated));
                         }}
-                        className="text-muted-foreground hover:text-red-500 p-1"
+                        className="text-muted-foreground hover:text-red-500 p-1 shrink-0"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -472,7 +472,7 @@ export default function LiteWizardPage() {
                 <Button
                   disabled={ideasLoading}
                   onClick={handleGenerateIdeas}
-                  className="h-11 px-6 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl w-full sm:w-auto shadow-md shadow-orange-500/20"
+                  className="h-11 px-6 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl w-full sm:w-auto shadow-md shadow-orange-500/20 whitespace-nowrap shrink-0"
                 >
                   {ideasLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
                   Brainstorm Ideas
@@ -497,7 +497,7 @@ export default function LiteWizardPage() {
                       <div className="flex justify-end pt-1">
                         <Button
                           onClick={() => handleSelectIdea(idea)}
-                          className="h-9 px-5 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-xs"
+                          className="h-9 px-5 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-xs whitespace-nowrap"
                         >
                           Write This Essay <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                         </Button>
@@ -510,7 +510,7 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 4: WRITE ESSAY (WITH AUTO-DRAFT GENERATOR) */}
+        {/* STEP 4: WRITE ESSAY (FIXED BUTTON SIZING & RESPONSIVE FLEX WRAP) */}
         {currentStep === 4 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -523,29 +523,21 @@ export default function LiteWizardPage() {
                   AI auto-generates your initial draft incorporating your Story Vault. You can freely edit everything below!
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  disabled={autoDraftLoading}
-                  variant="outline"
-                  onClick={handleAutoGenerateDraft}
-                  className="h-9 text-xs font-bold border-orange-500/30 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
-                >
-                  {autoDraftLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Wand2 className="h-3.5 w-3.5 mr-1.5 text-orange-500" />}
-                  Auto-Generate Draft
-                </Button>
 
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Badge
                   variant="outline"
-                  className={`text-xs font-bold ${wordCount > 650 ? "border-red-500 text-red-500" : "border-emerald-500 text-emerald-500"}`}
+                  className={`text-xs font-bold py-1.5 px-3 shrink-0 ${wordCount > 650 ? "border-red-500 text-red-500" : "border-emerald-500 text-emerald-500"}`}
                 >
                   {wordCount} / 650 words
                 </Badge>
+
                 <Button
                   disabled={!essayText.trim()}
                   onClick={handleRunFeedback}
-                  className="h-10 px-6 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md shadow-orange-500/20"
+                  className="h-10 px-5 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md shadow-orange-500/20 whitespace-nowrap shrink-0"
                 >
-                  Get Admissions Feedback <ArrowRight className="ml-1.5 h-4 w-4" />
+                  Get Feedback <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
@@ -569,12 +561,12 @@ export default function LiteWizardPage() {
                     className="text-sm leading-relaxed"
                   />
 
-                  <div className="flex justify-between items-center pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleStartNewEssay}
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                      className="text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
                     >
                       <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset Draft & Start Fresh
                     </Button>
@@ -583,9 +575,9 @@ export default function LiteWizardPage() {
                       variant="outline"
                       size="sm"
                       onClick={handleAutoGenerateDraft}
-                      className="text-xs font-semibold text-orange-500 border-orange-500/30"
+                      className="text-xs font-bold text-orange-600 dark:text-orange-400 border-orange-500/30 hover:bg-orange-500/10 whitespace-nowrap shrink-0"
                     >
-                      <Wand2 className="mr-1.5 h-3.5 w-3.5" /> Regenerate AI Draft
+                      <Wand2 className="mr-1.5 h-3.5 w-3.5 text-orange-500" /> Regenerate AI Draft
                     </Button>
                   </div>
                 </>
@@ -607,17 +599,17 @@ export default function LiteWizardPage() {
                   Evaluated against Common App admissions standards.
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button
                   onClick={() => setCurrentStep(4)}
                   variant="outline"
-                  className="h-9 text-xs font-semibold border-border/40"
+                  className="h-9 px-3 text-xs font-semibold border-border/40 whitespace-nowrap"
                 >
                   <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back to Editor
                 </Button>
                 <Button
                   onClick={handleStartNewEssay}
-                  className="h-9 px-4 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md"
+                  className="h-9 px-4 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md whitespace-nowrap"
                 >
                   <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Start New Essay
                 </Button>
@@ -676,7 +668,7 @@ export default function LiteWizardPage() {
                   <div className="pt-4 flex justify-center">
                     <Button
                       onClick={handleStartNewEssay}
-                      className="h-11 px-8 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md text-sm"
+                      className="h-11 px-8 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md text-sm whitespace-nowrap"
                     >
                       <RotateCcw className="mr-2 h-4 w-4" /> Start Next Essay
                     </Button>

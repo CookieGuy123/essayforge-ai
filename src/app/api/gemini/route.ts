@@ -1,36 +1,7 @@
 import { NextResponse } from "next/server";
 
-const CANDIDATE_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro",
-  "gemini-3.5-flash"
-];
-
-async function getAvailableGeminiModel(apiKey: string): Promise<string[]> {
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(4000)
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const models = data?.models || [];
-      const generateModels = models
-        .filter((m: any) => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-        .map((m: any) => m.name.replace(/^models\//, ""));
-
-      if (generateModels.length > 0) {
-        return Array.from(new Set([...generateModels, ...CANDIDATE_MODELS]));
-      }
-    }
-  } catch (e) {
-    // fallback
-  }
-  return CANDIDATE_MODELS;
-}
+// Priority chain per production specification: gemini-2.5-flash -> gemini-2.0-flash
+const PRIORITY_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
 
 export async function POST(req: Request) {
   try {
@@ -64,12 +35,15 @@ export async function POST(req: Request) {
       }
     };
 
-    const availableModels = await getAvailableGeminiModel(apiKey);
     let lastErrorMessage = "";
 
-    // Iterate through candidates until one succeeds (handles high demand / rate limits gracefully)
-    for (const modelId of availableModels) {
+    for (let i = 0; i < PRIORITY_MODELS.length; i++) {
+      const modelId = PRIORITY_MODELS[i];
+      const isLastModel = i === PRIORITY_MODELS.length - 1;
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+
+      const startTime = Date.now();
+      const startTimestamp = new Date().toISOString();
 
       try {
         const res = await fetch(endpoint, {
@@ -77,30 +51,62 @@ export async function POST(req: Request) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
           cache: "no-store",
-          signal: AbortSignal.timeout(30000)
+          signal: AbortSignal.timeout(15000) // 15-second strict interactive timeout per attempt
         });
 
+        const duration = Date.now() - startTime;
         const data = await res.json().catch(() => null);
 
         if (res.ok && data) {
           const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (generatedText) {
+            console.log(`[Gemini Log] Model: ${modelId} | Start: ${startTimestamp} | Status: ${res.status} | Duration: ${duration}ms | FallbackTriggered: false`);
             return NextResponse.json({ content: generatedText, choices: [{ message: { content: generatedText } }] });
           }
         }
 
-        // If high demand (429/503) or model error, log and failover to next model
-        if (data?.error?.message) {
-          lastErrorMessage = data.error.message;
+        const errorMessage = data?.error?.message || `HTTP ${res.status} Error`;
+        lastErrorMessage = errorMessage;
+
+        // Fallback ONLY for temporary availability/quota errors: HTTP 429 (Rate Limit) or HTTP 503 (Service Unavailable)
+        const isTemporaryError = res.status === 429 || res.status === 503;
+        const fallbackTriggered = isTemporaryError && !isLastModel;
+
+        console.log(`[Gemini Log] Model: ${modelId} | Start: ${startTimestamp} | Status: ${res.status} | Duration: ${duration}ms | FallbackTriggered: ${fallbackTriggered}`);
+
+        // Immediately fail on non-retryable errors (HTTP 400 Bad Request, HTTP 404 Not Found, etc.)
+        if (!isTemporaryError) {
+          return NextResponse.json(
+            { error: `Gemini ${modelId} Error (${res.status}): ${errorMessage}` },
+            { status: res.status }
+          );
+        }
+
+        // Short 500ms delay before fallback attempt on 429/503
+        if (fallbackTriggered) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       } catch (err: any) {
-        lastErrorMessage = err.message || "Request error";
+        const duration = Date.now() - startTime;
+        const isTimeout = err.name === "AbortError" || err.message?.includes("timeout");
+        lastErrorMessage = err.message || "Request timeout";
+
+        const fallbackTriggered = isTimeout && !isLastModel;
+        console.log(`[Gemini Log] Model: ${modelId} | Start: ${startTimestamp} | Status: ${isTimeout ? "Timeout (15s)" : "Error"} | Duration: ${duration}ms | FallbackTriggered: ${fallbackTriggered}`);
+
+        if (!isTimeout) {
+          return NextResponse.json({ error: `Request Error: ${err.message}` }, { status: 500 });
+        }
+
+        if (fallbackTriggered) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
       }
     }
 
     return NextResponse.json(
-      { error: lastErrorMessage || "Google Gemini is currently experiencing temporary high demand across models. Please click Regenerate in a few seconds!" },
-      { status: 429 }
+      { error: lastErrorMessage || "Google Gemini is currently experiencing temporary high demand across models. Please try again in a few seconds!" },
+      { status: 503 }
     );
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to call Gemini API." }, { status: 500 });

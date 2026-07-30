@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-// Priority chain per production specification: gemini-2.5-flash -> gemini-2.0-flash
-const PRIORITY_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
+// Priority chain optimized for Google AI Studio Free Tier availability
+const PRIORITY_MODELS = ["gemini-1.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
 
 export async function POST(req: Request) {
   try {
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
         const errorMessage = data?.error?.message || `HTTP ${res.status} Error`;
         lastErrorMessage = errorMessage;
 
-        // Fallback ONLY for temporary availability/quota errors: HTTP 429 (Rate Limit) or HTTP 503 (Service Unavailable)
+        // Fallback ONLY for temporary availability/quota errors: HTTP 429 (Rate Limit / Quota) or HTTP 503 (Service Unavailable)
         const isTemporaryError = res.status === 429 || res.status === 503;
         const fallbackTriggered = isTemporaryError && !isLastModel;
 
@@ -82,9 +82,10 @@ export async function POST(req: Request) {
           );
         }
 
-        // Short 500ms delay before fallback attempt on 429/503
+        // If rate limited (429), wait 2.5 seconds for the free-tier quota window to reset before attempting fallback
         if (fallbackTriggered) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          const waitMs = res.status === 429 ? 2500 : 500;
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
         }
       } catch (err: any) {
         const duration = Date.now() - startTime;

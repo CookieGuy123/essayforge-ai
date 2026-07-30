@@ -13,7 +13,7 @@ async function getActiveModel(): Promise<{ endpoint: string; modelId: string | n
       const cleanEndpoint = endpoint.replace(/\/+$/, "");
       const res = await fetch(`${cleanEndpoint}/models`, {
         cache: 'no-store',
-        signal: AbortSignal.timeout(6000)
+        signal: AbortSignal.timeout(1500)
       });
 
       if (res.ok) {
@@ -40,7 +40,7 @@ export async function GET() {
       const cleanEndpoint = endpoint.replace(/\/+$/, "");
       const res = await fetch(`${cleanEndpoint}/models`, {
         cache: 'no-store',
-        signal: AbortSignal.timeout(6000)
+        signal: AbortSignal.timeout(1500)
       });
 
       if (res.ok) {
@@ -72,7 +72,7 @@ export async function GET() {
     modelName: "Offline",
     modelsCount: 0,
     latencyMs: 0,
-    error: "LM Studio server is offline. Please check your cloudflared tunnel or NEXT_PUBLIC_LM_STUDIO_URL in Vercel."
+    error: "LM Studio server is offline."
   });
 }
 
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
           cache: "no-store",
-          signal: AbortSignal.timeout(65000)
+          signal: AbortSignal.timeout(3000)
         });
 
         const responseData = await res.json().catch(() => null);

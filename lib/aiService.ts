@@ -111,7 +111,7 @@ export async function checkLMStudioStatus(): Promise<LMStudioStatus> {
     try {
       const res = await fetch(`${LM_STUDIO_DIRECT_URL}/models`, {
         cache: "no-store",
-        signal: AbortSignal.timeout(6000)
+        signal: AbortSignal.timeout(2000)
       });
       if (res.ok) {
         const data = await res.json();
@@ -148,7 +148,7 @@ export async function checkLMStudioStatus(): Promise<LMStudioStatus> {
   // Node server check
   const startTime = Date.now();
   try {
-    const response = await axios.get(`${LM_STUDIO_DIRECT_URL}/models`, { timeout: 6000 });
+    const response = await axios.get(`${LM_STUDIO_DIRECT_URL}/models`, { timeout: 2000 });
     const latency = Date.now() - startTime;
     const models = response.data?.data || [];
     const isLoaded = models.length > 0;
@@ -181,14 +181,22 @@ export async function getAICompletion(
   systemPrompt: string = "You are EssayForge AI, an expert college admissions essay coach.",
   maxTokens: number = 2500
 ): Promise<string> {
-  const provider = typeof window !== "undefined" ? localStorage.getItem("essayforge_provider") : "lm-studio";
+  const geminiKey = typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null;
+  const storedProvider = typeof window !== "undefined" ? localStorage.getItem("essayforge_provider") : null;
 
-  // Route strictly to Google Gemini API if selected
-  if (provider === "gemini") {
-    return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
+  // Auto-default to Gemini if Gemini Key exists or if provider is not explicitly set to lm-studio
+  const provider = storedProvider || (geminiKey ? "gemini" : "gemini");
+
+  // Route strictly to Google Gemini API if selected or if defaulting to Gemini
+  if (provider === "gemini" || geminiKey) {
+    try {
+      return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
+    } catch (geminiErr: any) {
+      if (provider === "gemini") throw geminiErr;
+    }
   }
 
-  // LM Studio Primary Route
+  // LM Studio Primary Route with fast 3-second timeout
   const payload = {
     messages: [
       { role: "system", content: systemPrompt },
@@ -203,7 +211,8 @@ export async function getAICompletion(
       const res = await fetch("/api/lm-studio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(3000)
       });
 
       const data = await res.json().catch(() => null);

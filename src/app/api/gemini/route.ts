@@ -1,37 +1,35 @@
 import { NextResponse } from "next/server";
 
-const FALLBACK_MODELS = [
+const CANDIDATE_MODELS = [
   "gemini-2.5-flash",
   "gemini-2.0-flash",
-  "gemini-1.5-flash-latest",
   "gemini-1.5-flash",
+  "gemini-1.5-flash-latest",
   "gemini-1.5-pro",
   "gemini-3.5-flash"
 ];
 
-async function getAvailableGeminiModel(apiKey: string): Promise<string> {
+async function getAvailableGeminiModel(apiKey: string): Promise<string[]> {
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
       cache: "no-store",
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(4000)
     });
     if (res.ok) {
       const data = await res.json();
       const models = data?.models || [];
-      const generateModels = models.filter((m: any) => 
-        m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
-      );
+      const generateModels = models
+        .filter((m: any) => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+        .map((m: any) => m.name.replace(/^models\//, ""));
 
-      // Pick best matching model (prefer flash/pro)
-      const flashModel = generateModels.find((m: any) => m.name.includes("flash"));
-      if (flashModel) return flashModel.name.replace(/^models\//, "");
-      
-      if (generateModels.length > 0) return generateModels[0].name.replace(/^models\//, "");
+      if (generateModels.length > 0) {
+        return Array.from(new Set([...generateModels, ...CANDIDATE_MODELS]));
+      }
     }
   } catch (e) {
-    // fallback below
+    // fallback
   }
-  return FALLBACK_MODELS[0];
+  return CANDIDATE_MODELS;
 }
 
 export async function POST(req: Request) {
@@ -66,15 +64,11 @@ export async function POST(req: Request) {
       }
     };
 
+    const availableModels = await getAvailableGeminiModel(apiKey);
     let lastErrorMessage = "";
 
-    // Step 1: Query API to dynamically discover available active models for this key
-    const activeModelName = await getAvailableGeminiModel(apiKey);
-    const candidateModels = [activeModelName, ...FALLBACK_MODELS];
-    const uniqueCandidates = Array.from(new Set(candidateModels));
-
-    // Step 2: Try candidate endpoints
-    for (const modelId of uniqueCandidates) {
+    // Iterate through candidates until one succeeds (handles high demand / rate limits gracefully)
+    for (const modelId of availableModels) {
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
       try {
@@ -95,15 +89,19 @@ export async function POST(req: Request) {
           }
         }
 
+        // If high demand (429/503) or model error, log and failover to next model
         if (data?.error?.message) {
           lastErrorMessage = data.error.message;
         }
       } catch (err: any) {
-        lastErrorMessage = err.message || "Failed request";
+        lastErrorMessage = err.message || "Request error";
       }
     }
 
-    return NextResponse.json({ error: lastErrorMessage || "Could not generate content from Gemini API." }, { status: 400 });
+    return NextResponse.json(
+      { error: lastErrorMessage || "Google Gemini is currently experiencing temporary high demand across models. Please click Regenerate in a few seconds!" },
+      { status: 429 }
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to call Gemini API." }, { status: 500 });
   }

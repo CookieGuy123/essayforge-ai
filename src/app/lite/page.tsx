@@ -102,6 +102,13 @@ export default function LiteWizardPage() {
     }
   }, []);
 
+  // Automatic Grading Trigger whenever switching to Step 5
+  useEffect(() => {
+    if (currentStep === 5 && !feedbackLoading && (!feedbackWithStories || !feedbackWithoutStories)) {
+      handleRunFeedback();
+    }
+  }, [currentStep]);
+
   // Voice-to-Text Speech Recognition (Story Vault)
   const handleToggleVoiceDictation = () => {
     if (isRecording) {
@@ -240,7 +247,7 @@ export default function LiteWizardPage() {
     }
   };
 
-  // Fast Parallel Feedback Generator (Promise.all executes both evaluations concurrently)
+  // Automatic & Manual Parallel Feedback Generator (Passes hasStoryVault boolean parameter)
   const handleRunFeedback = async () => {
     setFeedbackLoading(true);
     setCurrentStep(5);
@@ -251,7 +258,7 @@ export default function LiteWizardPage() {
 
       if (draftWithStories.trim()) {
         promises.push(
-          analyzeEssayComprehensive(draftWithStories, selectedPrompt, profile)
+          analyzeEssayComprehensive(draftWithStories, selectedPrompt, profile, undefined, true)
             .then(res => setFeedbackWithStories(res))
             .catch(() => {})
         );
@@ -259,7 +266,7 @@ export default function LiteWizardPage() {
 
       if (draftWithoutStories.trim()) {
         promises.push(
-          analyzeEssayComprehensive(draftWithoutStories, selectedPrompt, profile)
+          analyzeEssayComprehensive(draftWithoutStories, selectedPrompt, profile, undefined, false)
             .then(res => setFeedbackWithoutStories(res))
             .catch(() => {})
         );
@@ -600,10 +607,10 @@ export default function LiteWizardPage() {
 
                 <Button
                   disabled={!draftWithStories.trim() && !draftWithoutStories.trim()}
-                  onClick={handleRunFeedback}
+                  onClick={() => setCurrentStep(5)}
                   className="h-10 px-5 font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-md shadow-orange-500/20 whitespace-nowrap shrink-0"
                 >
-                  Get Feedback <ArrowRight className="ml-1.5 h-4 w-4" />
+                  View Admissions Feedback <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
@@ -696,7 +703,7 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 5: DUAL ADMISSIONS RUBRIC FEEDBACK (WITH AND WITHOUT STORY VAULT) */}
+        {/* STEP 5: AUTOMATIC DUAL ADMISSIONS RUBRIC FEEDBACK */}
         {currentStep === 5 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -704,9 +711,9 @@ export default function LiteWizardPage() {
                 <Badge className="w-fit bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold text-[11px] px-2.5 py-0.5">
                   Step 5 of 5
                 </Badge>
-                <CardTitle className="text-xl font-extrabold tracking-tight">Admissions Rubric Feedback</CardTitle>
+                <CardTitle className="text-xl font-extrabold tracking-tight">Admissions Dean Rubric Evaluation</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground">
-                  Compare admissions scores and coaching feedback between both essay versions!
+                  Evaluated with Stanford/Ivy League Admissions Dean rigor!
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -740,7 +747,7 @@ export default function LiteWizardPage() {
                     }`}
                   >
                     <Wand2 className="h-3.5 w-3.5" />
-                    With Story Vault ✨ {feedbackWithStories ? `(Score: ${feedbackWithStories.overallScore})` : "(No Draft)"}
+                    With Story Vault ✨ {feedbackWithStories ? `(Score: ${feedbackWithStories.overallScore})` : "(Grading...)"}
                   </button>
 
                   <button
@@ -752,7 +759,7 @@ export default function LiteWizardPage() {
                     }`}
                   >
                     <FileText className="h-3.5 w-3.5" />
-                    Without Stories (Fresh Narrative) ✍️ {feedbackWithoutStories ? `(Score: ${feedbackWithoutStories.overallScore})` : "(No Draft)"}
+                    Without Stories (Fresh Narrative) ✍️ {feedbackWithoutStories ? `(Score: ${feedbackWithoutStories.overallScore})` : "(Grading...)"}
                   </button>
                 </div>
               </div>
@@ -760,23 +767,33 @@ export default function LiteWizardPage() {
               {feedbackLoading ? (
                 <div className="py-16 text-center space-y-3">
                   <Loader2 className="h-10 w-10 text-orange-500 animate-spin mx-auto" />
-                  <p className="text-sm font-bold text-foreground">Evaluating both Common App essays in parallel...</p>
-                  <p className="text-xs text-muted-foreground">Evaluating voice authenticity, reflection depth, and admissions fit.</p>
+                  <p className="text-sm font-bold text-foreground">Admissions Dean is automatically evaluating your essays against Ivy League rubrics...</p>
+                  <p className="text-xs text-muted-foreground">Applying strict Story Vault anecdote checks, voice authenticity analysis, and reflection rigor.</p>
                 </div>
               ) : currentFeedback ? (
                 <div className="space-y-4">
-                  {/* Score */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-500/10 via-card to-card border border-orange-500/30 flex items-center justify-between">
+                  {/* Score Card */}
+                  <div className={`p-4 rounded-2xl border flex items-center justify-between ${
+                    activeFeedbackTab === "with" 
+                      ? "bg-gradient-to-r from-emerald-500/10 via-card to-card border-emerald-500/30" 
+                      : "bg-gradient-to-r from-amber-500/10 via-card to-card border-amber-500/30"
+                  }`}>
                     <div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs font-bold border-orange-500/30 text-orange-500">
-                          {activeFeedbackTab === "with" ? "✨ With Story Vault Anecdotes" : "✍️ Without Stories (Fresh Narrative)"}
+                        <Badge variant="outline" className={`text-xs font-bold ${
+                          activeFeedbackTab === "with" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : "border-amber-500/40 text-amber-600 dark:text-amber-400"
+                        }`}>
+                          {activeFeedbackTab === "with" ? "✨ With Story Vault Anecdotes (High Specificity)" : "✍️ Without Stories (Open Narrative Penalty)"}
                         </Badge>
                       </div>
                       <h3 className="font-extrabold text-lg mt-1">Admissions Fit Score</h3>
                       <p className="text-xs text-muted-foreground mt-0.5">{currentFeedback.summary}</p>
                     </div>
-                    <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
+                    <div className={`h-16 w-16 rounded-full font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md ${
+                      activeFeedbackTab === "with"
+                        ? "bg-gradient-to-tr from-emerald-500 to-teal-600 text-white"
+                        : "bg-gradient-to-tr from-amber-500 to-orange-600 text-white"
+                    }`}>
                       {currentFeedback.overallScore}
                     </div>
                   </div>
@@ -785,7 +802,9 @@ export default function LiteWizardPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div className="p-2.5 rounded-xl bg-card border border-border/40 text-center">
                       <p className="text-[11px] text-muted-foreground">Authenticity</p>
-                      <p className="font-extrabold text-sm text-foreground">{currentFeedback.authenticityScore}/100</p>
+                      <p className={`font-extrabold text-sm ${currentFeedback.authenticityScore >= 85 ? "text-emerald-500" : "text-amber-500"}`}>
+                        {currentFeedback.authenticityScore}/100
+                      </p>
                     </div>
                     <div className="p-2.5 rounded-xl bg-card border border-border/40 text-center">
                       <p className="text-[11px] text-muted-foreground">Reflection</p>
@@ -793,7 +812,9 @@ export default function LiteWizardPage() {
                     </div>
                     <div className="p-2.5 rounded-xl bg-card border border-border/40 text-center">
                       <p className="text-[11px] text-muted-foreground">Specificity</p>
-                      <p className="font-extrabold text-sm text-foreground">{currentFeedback.specificityScore}/100</p>
+                      <p className={`font-extrabold text-sm ${currentFeedback.specificityScore >= 85 ? "text-emerald-500" : "text-amber-500"}`}>
+                        {currentFeedback.specificityScore}/100
+                      </p>
                     </div>
                     <div className="p-2.5 rounded-xl bg-card border border-border/40 text-center">
                       <p className="text-[11px] text-muted-foreground">Grammar & Flow</p>
@@ -810,7 +831,7 @@ export default function LiteWizardPage() {
                       ))}
                     </div>
                     <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
-                      <p className="font-bold text-amber-600 dark:text-amber-400">Growth Opportunities</p>
+                      <p className="font-bold text-amber-600 dark:text-amber-400">Growth & Admissions Opportunities</p>
                       {currentFeedback.weaknesses.map((w, i) => (
                         <p key={i} className="text-muted-foreground">• {w}</p>
                       ))}
@@ -844,7 +865,7 @@ export default function LiteWizardPage() {
               ) : (
                 <div className="text-center py-10 space-y-3">
                   <p className="text-xs text-muted-foreground">
-                    No feedback available for {activeFeedbackTab === "with" ? "the 'With Story Vault' draft" : "the 'Without Stories' draft"}.
+                    No draft detected for {activeFeedbackTab === "with" ? "the 'With Story Vault' draft" : "the 'Without Stories' draft"}.
                   </p>
                   <Button
                     size="sm"
@@ -852,7 +873,7 @@ export default function LiteWizardPage() {
                     onClick={() => setCurrentStep(4)}
                     className="text-xs font-bold border-orange-500/30 text-orange-500"
                   >
-                    Go Back to Editor to Write or Generate Draft
+                    Go Back to Editor to Generate Draft
                   </Button>
                 </div>
               )}

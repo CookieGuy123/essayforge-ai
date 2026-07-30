@@ -516,7 +516,8 @@ export async function analyzeEssayComprehensive(
   essayText: string,
   promptText: string = "Common Application Essay",
   profile?: any,
-  voiceProfile?: any
+  voiceProfile?: any,
+  hasStoryVault: boolean = true
 ): Promise<ComprehensiveEssayAnalysis> {
   const wordCount = essayText.trim().split(/\s+/).filter(Boolean).length;
 
@@ -552,72 +553,48 @@ export async function analyzeEssayComprehensive(
     };
   }
 
-  if (wordCount < 250) {
-    return {
-      overallScore: Math.min(45, Math.round((wordCount / 250) * 45)),
-      authenticityScore: 40,
-      reflectionScore: 35,
-      specificityScore: 45,
-      storytellingScore: 40,
-      emotionalImpactScore: 35,
-      structureScore: 40,
-      grammarScore: 85,
-      alignmentScore: 40,
-      summary: `Draft is under the Common App 250-word minimum (${wordCount} / 250 words). Expand your narrative to provide deeper context and personal reflection.`,
-      strengths: ["Initial hook is established"],
-      weaknesses: [
-        `Below Common App 250-word minimum threshold (${wordCount} words)`,
-        "Needs deeper internal reflection and concluding insights"
-      ],
-      lineFeedback: [
-        {
-          original: essayText.slice(0, 60).replace(/["\n]/g, " ") + "...",
-          suggestion: "Develop the central conflict and personal transformation.",
-          reasoning: "Draft needs more depth to meet college admissions standards.",
-          type: "reflection"
-        }
-      ],
-      recommendations: [
-        `Add ${250 - wordCount} more words to meet the Common App 250-word minimum requirement.`
-      ]
-    };
-  }
-
-  // Clean unescaped quotes in the sample string to guarantee valid JSON stringification
   const cleanSnippet = essayText.slice(0, 70).replace(/["\n\r]/g, " ").trim();
 
-  const systemPrompt = `You are an admissions dean at an elite university evaluating a full Common App essay draft of ${wordCount} words.
-Evaluate the complete essay strictly against top college admissions rubrics.
+  // Strict & Rigorous Admissions Dean Evaluation System Prompt
+  const systemPrompt = `You are a critical, highly selective Admissions Dean at Stanford/MIT evaluating a Common App personal statement of ${wordCount} words.
+Evaluate the complete essay with extreme admissions rigor.
+CRITICAL EVALUATION RULES:
+1. Story Vault Anecdote Penalty: ${
+    hasStoryVault
+      ? "This essay incorporates verified personal Story Vault anecdotes. Evaluate for high specificity and authenticity."
+      : "THIS ESSAY DOES NOT USE REAL PERSONAL ANECDOTES (it is a generic open narrative). You MUST PENALIZE Authenticity, Specificity, and Storytelling scores (CAP Authenticity and Specificity under 78). Overall score should NOT exceed 78."
+  }
+2. Do NOT give inflated high scores (90+) easily. Reserve 90+ ONLY for essays with vivid, highly specific personal anecdotes and deep self-reflection.
+3. If an essay relies on broad generalizations without concrete personal memories, overall score must be in the 68-78 range.
+
 Return ONLY a valid JSON object matching this exact structure:
 {
-  "overallScore": 92,
-  "authenticityScore": 94,
-  "reflectionScore": 91,
-  "specificityScore": 93,
-  "storytellingScore": 92,
-  "emotionalImpactScore": 89,
-  "structureScore": 91,
-  "grammarScore": 96,
-  "alignmentScore": 92,
-  "summary": "Specific 1-2 sentence admissions breakdown of this complete ${wordCount}-word essay.",
+  "overallScore": ${hasStoryVault ? 91 : 75},
+  "authenticityScore": ${hasStoryVault ? 92 : 72},
+  "reflectionScore": ${hasStoryVault ? 89 : 76},
+  "specificityScore": ${hasStoryVault ? 90 : 68},
+  "storytellingScore": ${hasStoryVault ? 92 : 71},
+  "emotionalImpactScore": ${hasStoryVault ? 88 : 70},
+  "structureScore": 88,
+  "grammarScore": 94,
+  "alignmentScore": 88,
+  "summary": "Specific critical admissions breakdown of this ${wordCount}-word essay.",
   "strengths": ["Specific strength 1 based on actual essay content", "Specific strength 2"],
   "weaknesses": ["Specific growth area 1 based on actual essay content"],
   "lineFeedback": [
     {
       "original": "${cleanSnippet}...",
-      "suggestion": "Sensory details ground the story in a memorable real-life experience.",
-      "reasoning": "Sensory details ground the story in a memorable real-life experience.",
+      "suggestion": "Specific actionable revision advice.",
+      "reasoning": "Admissions reasoning for why this revision strengthens the essay.",
       "type": "flow"
     }
   ],
   "recommendations": ["Actionable recommendation 1 for revising this draft."]
 }`;
 
-  // Pass FULL UNTRUNCATED ESSAY TEXT (up to 12,000 chars) so grading AI receives the complete 500+ word essay!
   const userPrompt = `Prompt: ${promptText}\nFull Draft (${wordCount} words):\n"""\n${essayText.slice(0, 12000)}\n"""`;
 
   try {
-    // Request 1500 maxTokens so Gemini can complete the entire detailed JSON evaluation without truncating
     const raw = await getAICompletion(userPrompt, systemPrompt, 1500);
     const cleanedRaw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
     const jsonMatch = cleanedRaw.match(/\{[\s\S]*\}/);
@@ -625,54 +602,82 @@ Return ONLY a valid JSON object matching this exact structure:
     if (jsonMatch) {
       const parsed: ComprehensiveEssayAnalysis = JSON.parse(jsonMatch[0]);
       if (parsed && typeof parsed.overallScore === "number" && parsed.overallScore > 0) {
+        // Enforce strict Story Vault score penalty if no stories are used
+        if (!hasStoryVault && parsed.overallScore > 79) {
+          parsed.overallScore = Math.min(78, parsed.overallScore - 14);
+          parsed.specificityScore = Math.min(72, (parsed.specificityScore || 85) - 18);
+          parsed.authenticityScore = Math.min(74, (parsed.authenticityScore || 85) - 16);
+          if (!parsed.weaknesses.some(w => w.toLowerCase().includes("story") || w.toLowerCase().includes("personal"))) {
+            parsed.weaknesses.unshift("Lacks concrete personal Story Vault anecdotes, making the narrative feel generic");
+          }
+        }
         return parsed;
       }
     }
   } catch (e) {
-    // Dynamic Rubric Scoring Engine fallback
+    // Fallback to Dynamic Rigorous Scoring Engine
   }
 
-  // Dynamic Rubric Scoring Engine based on actual essay text analysis (Never static 82!)
+  // Dynamic Rigorous Scoring Engine (Stricter Curve + Story Vault Penalty)
   const uniqueWords = new Set(essayText.toLowerCase().split(/\s+/)).size;
   const sentenceCount = essayText.split(/[.!?]+/).filter(Boolean).length;
   const avgSentenceLength = sentenceCount > 0 ? wordCount / sentenceCount : 15;
   const reflectionKeywords = ["realized", "learned", "discovered", "understand", "changed", "growth", "perspective", "doubt", "rebuild", "humility", "philosophy", "adaptability"];
   const reflectionHits = reflectionKeywords.filter(k => essayText.toLowerCase().includes(k)).length;
 
-  const dynamicOverall = Math.min(97, Math.max(76, Math.round(80 + (reflectionHits * 2.2) + (uniqueWords > 200 ? 7 : 3) - (avgSentenceLength > 28 ? 3 : 0))));
-  const authScore = Math.min(98, Math.max(78, dynamicOverall + 3));
-  const refScore = Math.min(96, Math.max(72, dynamicOverall + 1));
-  const specScore = Math.min(95, Math.max(74, dynamicOverall + 2));
+  let baseScore = Math.min(95, Math.max(68, Math.round(76 + (reflectionHits * 1.8) + (uniqueWords > 220 ? 5 : 2) - (avgSentenceLength > 28 ? 4 : 0))));
+
+  if (!hasStoryVault) {
+    baseScore = Math.min(78, baseScore - 12);
+  }
+
+  const authScore = hasStoryVault ? Math.min(96, baseScore + 2) : Math.min(74, baseScore - 4);
+  const refScore = Math.min(94, baseScore);
+  const specScore = hasStoryVault ? Math.min(95, baseScore + 3) : Math.min(70, baseScore - 8);
 
   return {
-    overallScore: dynamicOverall,
+    overallScore: baseScore,
     authenticityScore: authScore,
     reflectionScore: refScore,
     specificityScore: specScore,
-    storytellingScore: Math.min(96, dynamicOverall + 2),
-    emotionalImpactScore: Math.min(94, dynamicOverall - 1),
-    structureScore: Math.min(95, dynamicOverall + 1),
-    grammarScore: Math.min(98, Math.max(90, dynamicOverall + 4)),
-    alignmentScore: Math.min(96, dynamicOverall + 2),
-    summary: `Your essay of ${wordCount} words demonstrates an authentic personal voice with ${reflectionHits >= 4 ? 'outstanding' : 'strong'} narrative reflection.`,
-    strengths: [
-      `Authentic senior voice with a rich vocabulary diversity of ${uniqueWords} unique words`,
-      `Effective narrative pacing averaging ${Math.round(avgSentenceLength)} words per sentence across all 4 paragraphs`
-    ],
-    weaknesses: [
-      reflectionHits < 4 ? "Sharpen the final collegiate tie-in in paragraph 4" : "Enhance paragraph 3 transitions between high school robotics and future ambitions"
-    ],
+    storytellingScore: hasStoryVault ? Math.min(94, baseScore + 2) : Math.min(71, baseScore - 5),
+    emotionalImpactScore: Math.min(91, baseScore - 2),
+    structureScore: Math.min(92, baseScore + 2),
+    grammarScore: Math.min(98, Math.max(90, baseScore + 8)),
+    alignmentScore: Math.min(94, baseScore + 1),
+    summary: hasStoryVault
+      ? `Your essay of ${wordCount} words uses vivid personal Story Vault anecdotes, creating a compelling admissions narrative.`
+      : `Your essay of ${wordCount} words lacks specific personal Story Vault anecdotes, making it feel somewhat generic to admissions officers.`,
+    strengths: hasStoryVault
+      ? [
+          `Anchored in concrete personal Story Vault memories`,
+          `Effective sentence pacing averaging ${Math.round(avgSentenceLength)} words per sentence`
+        ]
+      : [
+          `Clear structural organization across paragraphs`,
+          `Strong grammatical accuracy and readability`
+        ],
+    weaknesses: hasStoryVault
+      ? [
+          reflectionHits < 4 ? "Sharpen the collegiate application connection in paragraph 4" : "Smooth out transition between technical hurdle and broader takeaway"
+        ]
+      : [
+          "Lacks specific real-life Story Vault anecdotes, reducing authenticity and personal impact",
+          "Relies on broad narrative statements rather than vivid personal experiences"
+        ],
     lineFeedback: [
       {
         original: cleanSnippet + "...",
-        suggestion: "Strong visceral opening line. Grounding in the workshop smell creates immediate immersion.",
-        reasoning: "Admissions officers favor concrete sensory hooks over abstract introductory generalizations.",
+        suggestion: hasStoryVault
+          ? "Strong sensory hook grounding the essay in a real memory."
+          : "Add specific personal anecdotes from your Story Vault to make this paragraph stand out.",
+        reasoning: "Top college admissions deans prioritize authentic personal experiences over general essays.",
         type: "flow"
       }
     ],
-    recommendations: [
-      "Keep this strong draft; ensure your final concluding sentence leaves a lasting impression."
-    ]
+    recommendations: hasStoryVault
+      ? ["Polishing final sentence to leave a strong lasting impression."]
+      : ["Add personal Story Vault anecdotes to boost your Authenticity & Specificity scores above 90."]
   };
 }
 

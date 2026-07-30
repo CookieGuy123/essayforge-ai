@@ -12,7 +12,8 @@ import {
   BrainCircuit, 
   Archive, 
   ArrowRight,
-  Lock
+  Lock,
+  Zap
 } from "lucide-react";
 
 export default function Home() {
@@ -36,9 +37,16 @@ export default function Home() {
 
           <ThemeToggle />
 
+          {/* Option to launch EssayForge Lite MVP */}
+          <Button asChild size="sm" variant="outline" className="hidden sm:inline-flex border-indigo-500/30 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-500/10">
+            <Link href="/lite">
+              <Zap className="mr-1.5 h-3.5 w-3.5 text-indigo-500" /> EssayForge Lite MVP
+            </Link>
+          </Button>
+
           <Button asChild size="lg" className="shadow-md shadow-primary/20 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold">
             <Link href="/dashboard">
-              Launch Studio <ArrowRight className="ml-2 h-4 w-4" />
+              Launch Full Studio <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -62,13 +70,13 @@ export default function Home() {
         <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
           <Button asChild size="lg" className="h-14 px-8 text-lg font-bold rounded-2xl shadow-xl shadow-primary/25 bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
             <Link href="/dashboard">
-              Open Dashboard Hub <ArrowRight className="ml-2.5 h-5 w-5" />
+              Open Full Studio <ArrowRight className="ml-2.5 h-5 w-5" />
             </Link>
           </Button>
-          <Button asChild size="lg" variant="outline" className="h-14 px-8 text-lg font-bold rounded-2xl border-border/40">
-            <Link href="/dashboard/essay-analyzer">
-              <BrainCircuit className="mr-2.5 h-5 w-5 text-indigo-500" />
-              Try Essay Analyzer
+          <Button asChild size="lg" variant="outline" className="h-14 px-8 text-lg font-bold rounded-2xl border-indigo-500/40 text-indigo-600 dark:text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10">
+            <Link href="/lite">
+              <Zap className="mr-2.5 h-5 w-5 text-indigo-500" />
+              Try EssayForge Lite (Common App MVP)
             </Link>
           </Button>
         </div>

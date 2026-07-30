@@ -3,17 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { 
   Bot, 
   User, 
-  MessageSquareCode, 
   Archive, 
   Sparkles, 
   PenTool, 
-  BrainCircuit,
-  ArrowRight,
-  ExternalLink
+  BrainCircuit
 } from "lucide-react";
 
 export function LiteHeader() {
@@ -21,11 +17,10 @@ export function LiteHeader() {
 
   const steps = [
     { num: 1, name: "Profile", href: "/lite/profile", icon: User },
-    { num: 2, name: "Interview", href: "/lite/interview", icon: MessageSquareCode },
-    { num: 3, name: "Vault", href: "/lite/vault", icon: Archive },
-    { num: 4, name: "Ideas", href: "/lite/ideas", icon: Sparkles },
-    { num: 5, name: "Essay", href: "/lite/workspace", icon: PenTool },
-    { num: 6, name: "Feedback", href: "/lite/feedback", icon: BrainCircuit },
+    { num: 2, name: "Vault", href: "/lite/vault", icon: Archive },
+    { num: 3, name: "Ideas", href: "/lite/ideas", icon: Sparkles },
+    { num: 4, name: "Essay", href: "/lite/workspace", icon: PenTool },
+    { num: 5, name: "Feedback", href: "/lite/feedback", icon: BrainCircuit },
   ];
 
   const currentStepIndex = steps.findIndex(s => pathname === s.href);
@@ -81,11 +76,6 @@ export function LiteHeader() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex text-xs font-medium border-border/40">
-            <Link href="/dashboard" prefetch={true}>
-              Full App <ExternalLink className="ml-1.5 h-3.5 w-3.5 text-muted-foreground" />
-            </Link>
-          </Button>
         </div>
       </div>
     </header>

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { generateDetailedEssayIdeas, analyzeEssayComprehensive, DetailedEssayIdea, ComprehensiveEssayAnalysis } from "@/lib/aiService";
 import { 
   Bot, 
@@ -19,8 +19,6 @@ import {
   ArrowLeft,
   Check, 
   Loader2, 
-  Plus, 
-  ExternalLink,
   BookOpen,
   Trash2
 } from "lucide-react";
@@ -151,11 +149,9 @@ export default function LiteWizardPage() {
             <p className="text-xs text-muted-foreground">Minimal Common App Personal Statement Wizard</p>
           </div>
         </div>
-        <Button asChild variant="outline" size="sm" className="text-xs font-semibold border-border/40">
-          <Link href="/dashboard">
-            Switch to Full App <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Step Wizard Progress Bar */}

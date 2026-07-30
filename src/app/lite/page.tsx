@@ -501,7 +501,7 @@ export default function LiteWizardPage() {
                           onClick={() => handleSelectIdea(idea)}
                           className="h-9 px-5 text-xs font-bold bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-xs whitespace-nowrap"
                         >
-                          Write This Essay <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                          Write College Essay <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -512,7 +512,7 @@ export default function LiteWizardPage() {
           </Card>
         )}
 
-        {/* STEP 4: WRITE ESSAY (WITH DUAL DRAFT OPTIONS: WITH VS WITHOUT STORIES) */}
+        {/* STEP 4: WRITE COLLEGE ESSAY */}
         {currentStep === 4 && (
           <Card className="border-border/40 shadow-sm animate-card-pop">
             <CardHeader className="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -520,7 +520,7 @@ export default function LiteWizardPage() {
                 <Badge className="w-fit bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold text-[11px] px-2.5 py-0.5">
                   Step 4 of 5
                 </Badge>
-                <CardTitle className="text-xl font-extrabold tracking-tight">Write Personal Statement</CardTitle>
+                <CardTitle className="text-xl font-extrabold tracking-tight">Write College Essay</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground">
                   Draft your 650-word essay below. You can generate a draft with your Story Vault or an open fresh narrative!
                 </CardDescription>
@@ -581,7 +581,7 @@ export default function LiteWizardPage() {
                 <div className="py-20 text-center space-y-3 bg-secondary/30 rounded-2xl border border-dashed border-orange-500/30">
                   <Loader2 className="h-10 w-10 text-orange-500 animate-spin mx-auto" />
                   <p className="text-sm font-bold text-foreground">
-                    {useStoriesOption ? "Drafting Common App essay with your Story Vault anecdotes..." : "Drafting fresh open narrative Common App essay..."}
+                    {useStoriesOption ? "Drafting college essay with your Story Vault anecdotes..." : "Drafting fresh open narrative college essay..."}
                   </p>
                   <p className="text-xs text-muted-foreground">Writing in an authentic, conversational high school senior voice (zero AI clichés & zero em dashes).</p>
                 </div>
@@ -594,7 +594,7 @@ export default function LiteWizardPage() {
                       setEssayText(e.target.value);
                       localStorage.setItem("essayforge_lite_essay", e.target.value);
                     }}
-                    placeholder="Write or edit your Common App Personal Statement draft here... (Target limit: 650 words)"
+                    placeholder="Write or edit your Common App college essay draft here... (Target limit: 650 words)"
                     className="text-sm leading-relaxed"
                   />
 

@@ -27,8 +27,8 @@ export function LiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-card/90 backdrop-blur-xl transition-colors">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        {/* Brand Logo & Lite Badge */}
+      <div className="relative max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Brand Logo & Lite Badge (Left) */}
         <div className="flex items-center gap-3">
           <Link href="/lite" prefetch={true} className="flex items-center gap-2 group">
             <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
@@ -42,10 +42,9 @@ export function LiteHeader() {
           </Link>
         </div>
 
-        {/* Step Progress Bar */}
-        <nav className="hidden md:flex items-center gap-1 bg-secondary/50 p-1 rounded-2xl border border-border/40">
+        {/* Step Progress Bar (Perfect Absolute Mathematical Center) */}
+        <nav className="hidden md:flex items-center gap-1 bg-secondary/50 p-1 rounded-2xl border border-border/40 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
           {steps.map((step, idx) => {
-            const Icon = step.icon;
             const isActive = pathname === step.href;
             const isCompleted = currentStepIndex > idx;
 
@@ -73,7 +72,7 @@ export function LiteHeader() {
           })}
         </nav>
 
-        {/* Actions */}
+        {/* Actions (Right) */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
         </div>

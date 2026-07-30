@@ -12,36 +12,37 @@ import {
   BrainCircuit, 
   Archive, 
   ArrowRight,
-  Lock,
-  Zap
+  Lock
 } from "lucide-react";
 
 export default function WelcomeLandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background/95 to-secondary/30 text-foreground transition-colors">
       {/* Top Navbar */}
-      <nav className="h-20 border-b border-border/40 backdrop-blur-xl px-8 flex items-center justify-between sticky top-0 z-40 bg-card/60">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
-            <Bot className="h-6 w-6" />
+      <nav className="h-20 border-b border-border/40 backdrop-blur-xl sticky top-0 z-40 bg-card/60">
+        <div className="max-w-6xl mx-auto h-full px-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+              <Bot className="h-6 w-6" />
+            </div>
+            <span className="font-extrabold text-xl tracking-tight text-indigo-600 dark:text-indigo-400">
+              EssayForge AI
+            </span>
           </div>
-          <span className="font-extrabold text-xl tracking-tight text-indigo-600 dark:text-indigo-400">
-            EssayForge AI
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Badge variant="outline" className="hidden sm:inline-flex gap-1.5 py-1 px-3 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            100% Local & Private
-          </Badge>
+          <div className="flex items-center gap-4">
+            <Badge variant="outline" className="hidden sm:inline-flex gap-1.5 py-1 px-3 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              100% Local & Private
+            </Badge>
 
-          <ThemeToggle />
+            <ThemeToggle />
 
-          <Button asChild size="lg" className="shadow-md shadow-primary/20 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl">
-            <Link href="/lite">
-              Start Common App Essay <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+            <Button asChild size="lg" className="shadow-md shadow-primary/20 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl">
+              <Link href="/lite">
+                Start Common App Essay <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </nav>
 

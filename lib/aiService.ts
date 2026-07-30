@@ -66,39 +66,25 @@ export interface ComprehensiveEssayAnalysis {
 export async function getGeminiCompletion(
   prompt: string,
   systemPrompt: string,
-  maxTokens: number = 800,
-  apiKeyOverride?: string
+  maxTokens: number = 900
 ): Promise<string> {
-  const apiKey = 
-    apiKeyOverride ||
-    (typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null) ||
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-    process.env.GEMINI_API_KEY;
+  const apiKey = typeof window !== "undefined" ? localStorage.getItem("essayforge_gemini_key") : null;
 
-  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY") {
-    throw new Error("Gemini API key is not configured. Add your GEMINI_API_KEY to .env.local or enter it in Settings!");
+  const res = await fetch("/api/gemini", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, systemPrompt, maxTokens, apiKeyOverride: apiKey }),
+    cache: "no-store"
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (res.ok && data && data.content) {
+    return data.content;
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const payload = {
-    contents: [
-      {
-        parts: [
-          { text: `${systemPrompt}\n\nUser Request:\n${prompt}` }
-        ]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: maxTokens
-    }
-  };
-
-  const res = await axios.post(endpoint, payload, { headers: { "Content-Type": "application/json" } });
-  const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("No response text received from Gemini API.");
-  return text;
+  const errMsg = data?.error || `Gemini API call failed with status ${res.status}`;
+  throw new Error(`Gemini Error: ${errMsg}`);
 }
 
 export async function checkLMStudioStatus(): Promise<LMStudioStatus> {
@@ -190,13 +176,9 @@ export async function getAICompletion(
 ): Promise<string> {
   const provider = typeof window !== "undefined" ? localStorage.getItem("essayforge_provider") : "lm-studio";
 
-  // Route to Google Gemini API if selected
+  // Route strictly to Google Gemini API if selected (NO local GPU fallback to avoid 100% GPU usage!)
   if (provider === "gemini") {
-    try {
-      return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
-    } catch (geminiErr: any) {
-      // Fallback to local LM Studio if Gemini call fails
-    }
+    return await getGeminiCompletion(prompt, systemPrompt, maxTokens);
   }
 
   const payload = {
@@ -378,16 +360,18 @@ export async function generateFullEssayDraft(
   promptText: string,
   profile?: any,
   stories?: any[],
-  ideaTitle?: string
+  ideaTitle?: string,
+  includeStories: boolean = true
 ): Promise<string> {
   const name = profile?.name || "Student";
   const major = profile?.intendedMajor || "my intended major";
   const colleges = profile?.colleges || "target universities";
-  const storiesSummary = stories && stories.length > 0 
+  
+  const storiesSummary = includeStories && stories && stories.length > 0 
     ? stories.map(s => `Anecdote (${s.title}): ${s.content}`).join("\n\n")
-    : "During a robotics regional, our optical sensor failed right before autonomous mode. I had fifteen minutes to manually re-code our movement based on wheel encoder counts.";
+    : "No pre-saved anecdotes used. Craft a organic narrative from scratch based on personal growth and self-reflection.";
 
-  // Strict Human Voice Prompting Directive (Zero AI Clichés / Zero Em Dashes / Authentic Voice)
+  // Human Voice Directive (Zero AI Clichés / Zero Em Dashes / Conversational High School Voice)
   const systemPrompt = `Write this Common App essay as if it were written by a thoughtful high school senior reflecting honestly on a real experience.
 Use a natural, conversational voice instead of overly polished or formal language.
 Include specific details, sensory moments, and personal reflections rather than generic statements.
@@ -403,7 +387,8 @@ STRICT MINIMUM LENGTH REQUIREMENT: You MUST write a full-length, complete Common
   const userPrompt = `Writer Name: ${name}. Intended Major: ${major}. Target Colleges: ${colleges}.
 Common App Prompt: ${promptText}
 Concept Title: ${ideaTitle || "The Unseen Iteration"}
-Personal Anecdotes & Memories:\n${storiesSummary}\n
+Incorporated Anecdotes: ${includeStories ? "YES" : "NO (Generate fresh open narrative)"}
+${storiesSummary}
 
 Write the complete 450+ word authentic human Common App Personal Statement.`;
 
@@ -411,9 +396,7 @@ Write the complete 450+ word authentic human Common App Personal Statement.`;
     const raw = await getAICompletion(userPrompt, systemPrompt, 900);
     const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
     
-    // Ensure strict minimum of 300+ words from LLM
     if (raw && wordCount >= 300) {
-      // Strip any accidental em dashes if model generated them
       return raw.replace(/—|--/g, ", ");
     }
   } catch (e) {
@@ -421,9 +404,10 @@ Write the complete 450+ word authentic human Common App Personal Statement.`;
   }
 
   // Guaranteed 450+ Word High-Quality Authentic Human Fallback Draft
-  const firstStory = stories && stories.length > 0 ? stories[0].content : "our robot's optical sensor failed mid-match, forcing me to rewrite our autonomous navigation loop relying on wheel encoder counts in fifteen minutes.";
-  
-  return `Title: ${ideaTitle || "The Unseen Iteration"}
+  if (includeStories) {
+    const firstStory = stories && stories.length > 0 ? stories[0].content : "our robot's optical sensor failed mid-match, forcing me to rewrite our autonomous navigation loop relying on wheel encoder counts in fifteen minutes.";
+    
+    return `Title: ${ideaTitle || "The Unseen Iteration"}
 
 The garage smelled like hot solder and cold coffee. It was 11:45 PM on a Tuesday, three days before regionals, and nothing was working. We had spent four months building a robot meant to navigate an obstacle grid automatically, but every time I hit the start button, it drove straight into the nearest folding table. My hands were stained with grease, my neck hurt from leaning over the chassis, and I was genuinely starting to doubt why I signed up to head the software team in the first place.
 
@@ -432,6 +416,17 @@ When you spend years telling people you want to major in ${major}, you build up 
 I sat down on the concrete floor with my laptop on my knees. Instead of trying to force the broken sensor to read data it clearly couldn't process, I started stripping away lines of code. I went back to basic geometry, calculating wheel rotation counts instead of optical distances. It wasn't the elegant, high-tech algorithm I had bragged about in our team notebook. It was clunky, simple, and required three manual calibration checks before every run. But when I pushed the code to the controller at midnight, the robot turned ninety degrees, moved four feet forward, and stopped precisely on the tape line.
 
 That night didn't feel like a movie turning point. I didn't have some profound epiphany about my future. But looking back now as I apply to ${colleges}, I realize it taught me something far more useful than software syntax. It taught me how to sit with frustration without panicking. When I get to college to study ${major}, I know I am going to face problems that don't have neat textbook answers. I am completely fine with that, because I know I can sit on a cold floor, admit when something isn't working, and rebuild a solution from scratch.`;
+  }
+
+  return `Title: ${ideaTitle || "Reframing the Problem"}
+
+I have a habit of keeping small scraps of paper in my desk drawer. Most of them are filled with quick sketches, half-written code functions, or notes from teachers that I meant to organize later. Last month, while cleaning out my workspace, I found a index card from sophomore year where I had written: "If it isn't perfect, start over."
+
+For a long time, I lived by that rule. I thought that commitment to ${major} meant executing every project flawlessly on the first attempt. If an essay draft felt clunky, I deleted the document. If a coding project threw an unexpected syntax error, I assumed I had chosen the wrong approach entirely. I confused perfection with competence, and it made every new challenge feel terrifyingly high-stakes.
+
+The shift happened gradually, not in a single dramatic moment. It came through working on open-ended problems where there was no single right answer to copy from a textbook. I began to realize that the most interesting insights didn't come from getting things right on the first try. They came from the messy middle, where you have to test three bad ideas before discovering one that actually works. I started leaving my imperfect drafts open on my desktop instead of deleting them.
+
+Looking ahead to my college journey studying ${major} at universities like ${colleges}, I am glad I stopped holding myself to an impossible standard of instant perfection. College is supposed to be challenging, and I am excited to enter a community where questioning assumptions and working through trial-and-error is celebrated. I still keep scraps of paper on my desk, but now I write a different reminder: "Embrace the iteration."`;
 }
 
 export async function analyzeEssayComprehensive(
